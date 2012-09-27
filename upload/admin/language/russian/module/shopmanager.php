@@ -1,10 +1,11 @@
 <?php
 
 // Heading
-$_['heading_title'] = 'Менеджер магазина';
+$_['heading_title'] = 'Менеджер Импорт/Экспорт';
 
 // Text
 $_['text_success'] = 'Успех: Импорт выполнен!';
+$_['text_export']           = 'Экспорт / Импорт';
 
 // Entry
 $_['entry_product_task'] = 'Товары';

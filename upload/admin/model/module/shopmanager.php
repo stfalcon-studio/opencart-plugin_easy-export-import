@@ -51,7 +51,9 @@ function shopmanager_error_shutdown_handler() {
 	}
 }
 
-class ModelToolShopmanager extends Model {
+class ModelModuleShopmanager extends Model {
+
+    public $configTable = 'shopmanager_config';
 
 	/**
 	 * Current language
@@ -59,13 +61,16 @@ class ModelToolShopmanager extends Model {
 	 */
 	protected $languageId = 1;
 
-	/**
+
+     /**
 	 * Cell's format
 	 *
 	 * @var type
 	 */
 	protected $priceFormat, $boxFormat, $weightFormat, $textFormat;
 	protected $columns = array();
+    public $settings = array();
+    public $relation = array();
 
 	protected function init() {
 		global $config;
@@ -77,14 +82,700 @@ class ModelToolShopmanager extends Model {
 		$this->loadDefaultLanguage();
 	}
 
-	/**
+    public function getConfig()
+    {
+        $sql = "SELECT * FROM " . DB_PREFIX . $this->configTable ;
+
+        $result = $this->db->query($sql);
+
+        $settings = array();
+        if ($result->rows) {
+            foreach ($result->rows as $row) {
+                $settings[$row['group']][$row['field']] = $row['field'];
+            }
+        }
+        $this->settings = $settings;
+        return $settings;
+    }
+
+    public function setConfig($group, $data)
+    {
+        $fieldList = array();
+        if ($group == 'product') {
+            $fieldList = $this->getProductFildsList();
+        }
+        if ($group == 'category') {
+            $fieldList = $this->getCateforyFildsList();
+        }
+
+        switch ($group) {
+            case 'category':
+            case 'product':
+                $sql = "DELETE  FROM " . DB_PREFIX . $this->configTable . " WHERE `group` = '{$group}' ;";
+                $this->db->query($sql);
+                $sql = "INSERT INTO `" . DB_PREFIX . $this->configTable . "` VALUES ";
+                $flag = false;
+                foreach ($data as $key => $groupElement) {
+                    if (isset($fieldList[$groupElement])) {
+                        $sql .= "(NULL, '{$group}', '{$groupElement}'),";
+                        $flag = true;
+                    }
+                }
+
+                if ($flag) {
+                    $sql = substr($sql,0,-1);
+                    $this->db->query($sql .= ';');
+                }
+                break;
+            default:
+            break;
+        }
+    }
+
+
+    /**
+     *  Category fields list
+     *
+     */
+    public function getCateforyFildsList()
+    {
+        return array(
+            "category_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true,
+                'readonly' => true,
+            ),
+            "parent_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "name" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "sort_order" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "image" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "date_added" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "date_modified" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "language_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "keyword" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "description" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "meta_description" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "meta_keyword" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "store_ids" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "status" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            )
+        );
+
+
+        /*return array(
+            'category.category_id' =>  array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true,
+            ),
+            'category.parent_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'category.sort_order' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true,
+            ),
+            'category_description.name' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true,
+            ),
+            'category.image' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true,
+            ),
+            'category.date_added' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true,
+            ),
+            'category.date_modified' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category_description.language_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'category_description.language_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'url_alias.keyword' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category_description.description' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category_description.meta_description' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category_description.meta_keyword' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category_to_store.store_ids' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'category.status' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+        );*/
+    }
+
+    /**
+     *  product fields list
+     *
+     */
+    public function getProductFildsList()
+    {
+        return array(
+            "product_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "name" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "categories" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "sku" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "location" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "quantity" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "model" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "manufacturer" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "image" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "shipping" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "price" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->priceFormat,
+                'enabled' => true
+            ),
+            "weight" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->weightFormat,
+                'enabled' => false
+            ),
+            "unit" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "length" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "width" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "height" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "length_unit" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "status" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "tax_class_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "viewed" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "language_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "keyword" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "description" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "meta_description" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "meta_keyword" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "images" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "stock_status_id" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            "store_ids" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "related" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "tags" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "sort_order" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "subtract" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            "minimum" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            "date_added" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "date_modified" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            "date_available" => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+        );
+       /* return array(
+            'product.product_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product_description.name' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product_to_category.categories' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'product.sku' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product.location' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.quantity' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product.model' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'manufacturer.name' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product_image.image' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product.shipping' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product.price' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->priceFormat,
+                'enabled' => true
+            ),
+            'product.weight' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->weightFormat,
+                'enabled' => false
+            ),
+            'weight_class_description.unit' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.length' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.width' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.height' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.length_class_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.status' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'product.tax_class_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.viewed' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product_description.language_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product_description.keyword' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product_description.description' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product_description.meta_description' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product_description.meta_keyword' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product_image.images' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product.stock_status_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => true
+            ),
+            'product_to_store.store_id' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product_related.related' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product_description.tags' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product.sort_order' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.subtract' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => false
+            ),
+            'product.minimum' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => null,
+                'enabled' => false
+            ),
+            'product.date_added' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'product.date_modified' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+            'product.date_available' => array(
+                'name' => null,
+                'length' => 20,
+                'format' => $this->textFormat,
+                'enabled' => true
+            ),
+        );*/
+    }
+
+
+    /**
 	 * Загрузка из XLS в MySQL
 	 *
 	 * @param type $filename
 	 * @param type $group
 	 * @return type
 	 */
-	public function upload($filename, $group) {
+	public function upload($filename, $group)
+    {
 		$this->init();
 		ini_set("memory_limit", "768M");
 
@@ -95,13 +786,15 @@ class ModelToolShopmanager extends Model {
 		$objReader->setReadDataOnly(true);
 		PHPExcel_Settings::setCacheStorageMethod($cacheMethod);
 		$reader = $objReader->load($filename);
+
 		if (!$this->validateHeading($reader, $group)) {
 			$this->log("Invalid {$group} header");
 			$reader->disconnectWorksheets();
 			unset($reader);
 			return false;
 		}
-		switch (trim($group)) {
+
+        switch (trim($group)) {
 			case 'category':
 				$this->cache->delete('category');
 				$this->cache->delete('category_description');
@@ -137,325 +830,19 @@ class ModelToolShopmanager extends Model {
 	 * @return type
 	 */
 	protected function isEnabled($column) {
+        if (!isset($this->columns[$column]['enabled'])) {
+            return false;
+        }
 		return (bool) $this->columns[$column]['enabled'];
 	}
 
 	public function loadColumns($group) {
 		switch ($group) {
 			case 'category':
-				$this->columns = array(
-					"category_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"parent_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"name" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"sort_order" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"image" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"date_added" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"date_modified" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"language_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"keyword" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"description" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					/*"meta_title" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),*/
-					"meta_description" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"meta_keyword" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"store_ids" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"status" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					)
-				);
-
+				$this->columns = $this->getCateforyFildsList();
 				break;
 			case 'product':
-				$this->columns = array(
-					"product_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"name" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"categories" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"sku" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"location" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"quantity" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"model" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"manufacturer" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"image" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"shipping" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"price" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->priceFormat,
-						'enabled' => true
-					),
-					"weight" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->weightFormat,
-						'enabled' => false
-					),
-					"unit" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"length" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"width" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"height" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"length_unit" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"status" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"tax_class_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"viewed" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"language_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"keyword" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"description" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"meta_description" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"meta_keyword" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"images" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"stock_status_id" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => true
-					),
-					"store_ids" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"related" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"tags" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"sort_order" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"subtract" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => false
-					),
-					"minimum" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => null,
-						'enabled' => false
-					),
-					"date_added" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"date_modified" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-					"date_available" => array(
-						'name' => null,
-						'length' => 20,
-						'format' => $this->textFormat,
-						'enabled' => true
-					),
-				);
+				$this->columns = $this->getProductFildsList();
 				break;
 			case 'product_options':
 				break;
@@ -499,6 +886,7 @@ class ModelToolShopmanager extends Model {
 	 * @return type
 	 */
 	public function export($group) {
+
 		$this->init();
 		ini_set("memory_limit", "128M");
 		require_once 'Spreadsheet/Excel/Writer.php';
@@ -518,15 +906,21 @@ class ModelToolShopmanager extends Model {
 
 		$group = strtolower(trim($group));
 		// sending HTTP headers
-		$workbook->send('backup_' . $group . '_' . date('Ymd') . '.xls');
+
+        // TODO:remove test check after debugging
+        if ($_REQUEST['test'] == 1) {
+		    $workbook->send('backup_' . $group . '_' . date('Ymd') . '.xls');
+        }
 
 		$worksheetName = ucfirst(str_replace('_', ' ', $group));
 		$worksheet = & $workbook->addWorksheet($worksheetName);
 
 		$this->loadColumns($group);
+
 		switch ($group) {
 			case 'category':
-				$this->populateCategoriesWorksheet($worksheet);
+                $this->columns = $this->getCateforyFildsList();
+                $this->populateCategoriesWorksheet($worksheet);
 				break;
 			case 'product':
 				$this->populateProductsWorksheet($worksheet);
@@ -593,6 +987,7 @@ class ModelToolShopmanager extends Model {
 		// find all manufacturers already stored in the database
 		$sql = "SELECT `manufacturer_id`, `name` FROM `" . DB_PREFIX . "manufacturer`;";
 		$result = $this->db->query($sql);
+
 		if ($result->rows) {
 			foreach ($result->rows as $row) {
 				$manufacturerId = $row['manufacturer_id'];
@@ -704,7 +1099,9 @@ class ModelToolShopmanager extends Model {
 		if (!$ok) {
 			$this->db->query('ROLLBACK;');
 			return false;
-		}
+        }
+
+
 
 		// get weight classes
 		$weightClassIds = $this->getWeightClassIds();
@@ -721,99 +1118,131 @@ class ModelToolShopmanager extends Model {
 			}
 
 			$sql = "UPDATE `" . DB_PREFIX . "product` SET ";
+
+            $flag = false;
+
 			if ($this->isEnabled('quantity')) {
 				$sql .= "`quantity`='{$product['quantity']}',";
+                $flag = true;
 			}
 			if ($this->isEnabled('sku')) {
 				$sql .= "`sku`='{$this->db->escape($product['sku'])}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('location')) {
 				$sql .= "`location`='{$this->db->escape($product['location'])}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('stock_status_id')) {
 				$sql .= "`stock_status_id`='" . (int) $product['stock_status_id'] . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('model')) {
 				$sql .= "`model`='{$this->db->escape($product['model'])}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('manufacturer')) {
 				$manufacturerName = $product['manufacturer'];
-				$sql .= "`manufacturer_id`='" . (int) $manufacturerIds[$manufacturerName] . "',";
+                $mId = (int) isset($manufacturerIds[$manufacturerName]) ? $manufacturerIds[$manufacturerName] : 'NULL';
+				$sql .= "`manufacturer_id`=" . $mId  . ",";
+                $flag = true;
 			}
 			if ($this->isEnabled('image')) {
 				$sql .= "`image`='{$product['image']}',";
+                $flag = true;
 			}
 			if ($this->isEnabled('shipping')) {
 				$shipping = $product['shipping'];
 				$shipping = ((strtoupper($shipping) == "YES") || (strtoupper($shipping) == "Y")) ? 1 : 0;
 				$sql .= "`shipping`='{$shipping}',";
+                $flag = true;
 			}
 			if ($this->isEnabled('price')) {
 				$sql .= "`price`='" . trim($product['price']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('date_added')) {
 				$product['date_added'] = ($product['date_added'] == 'NOW()') ? "{$product['date_added']}" : "'{$product['date_added']}'";
 				$sql .= "`date_added`={$product['date_added']}, ";
+                $flag = true;
 			}
 			if ($this->isEnabled('date_modified')) {
 				$product['date_modified'] = ($product['date_modified'] == 'NOW()') ? "{$product['date_modified']}" : "'{$product['date_modified']}'";
 				$sql .= "`date_modified`={$product['date_modified']}, ";
+                $flag = true;
 			}
 			if ($this->isEnabled('date_available')) {
 				$product['date_available'] = ($product['date_available'] == 'NOW()') ? "{$product['date_available']}" : "'{$product['date_available']}'";
 				$sql .= "`date_available`={$product['date_available']}, ";
+                $flag = true;
 			}
 			if ($this->isEnabled('weight')) {
 				$weight = empty($product['weight']) ? 0 : $product['weight'];
 				$sql .= "`weight`='{$weight}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('unit')) {
 				$unit = $product['unit'];
 				$weightClassId = (isset($weightClassIds[$unit])) ? $weightClassIds[$unit] : 0;
 				$sql .= "`weight_class_id`='{$weightClassId}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('status')) {
 				$status = $product['status'];
 				$status = ((strtolower($status) == "true") || (strtoupper($status) == "YES") || (strtoupper($status) == "ENABLED")) ? 1 : 0;
 				$sql .= "`status`='{$status}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('stock_status_id')) {
 				$manufacturerName = $product['manufacturer'];
 				$sql .= "`manufacturer_id`='" . (int) $manufacturerIds[$manufacturerName] . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('tax_class_id')) {
 				$sql .= "`tax_class_id`='" . (int) $product['tax_class_id'] . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('viewed')) {
+                $flag = true;
 				$sql .= "`viewed`='" . (int) $product['viewed'] . "',";
 			}
 			if ($this->isEnabled('length')) {
 				$sql .= "`length`='" . trim($product['length']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('width')) {
 				$sql .= "`width`='" . trim($product['width']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('height')) {
 				$sql .= "`height`='" . trim($product['height']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('length_unit')) {
 				$lengthUnit = $product['length_unit'];
 				$lengthClassId = (isset($lengthClassIds[$lengthUnit])) ? $lengthClassIds[$lengthUnit] : 0;
 				$sql .= "`length_class_id`='{$lengthClassId}', ";
+                $flag = true;
 			}
 			if ($this->isEnabled('sort_order')) {
 				$sql .= "`sort_order`='" . (int) $product['sort_order'] . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('subtract')) {
 				$subtract = $product['subtract'];
 				$subtract = ((strtolower($subtract) == "true") || (strtoupper($subtract) == "YES") || (strtoupper($subtract) == "ENABLED")) ? 1 : 0;
 				$sql .= "`subtract`='" . trim($subtract) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('minimum')) {
 				$sql .= "`minimum`='" . trim($product['minimum']) . "',";
+                $flag = true;
 			}
 			$sql = rtrim(trim($sql), ',') . " WHERE `product_id` = {$productId};";
-			$this->db->query($sql);
+
+            if ($flag) {
+			    $this->db->query($sql);
+            }
 
 			if ($this->isEnabled('language_id') && $product['language_id']) {
 				$languageId = $product['language_id'];
@@ -822,23 +1251,37 @@ class ModelToolShopmanager extends Model {
 				//continue;
 			}
 
+            $flag = false;
 			$sql = "UPDATE `" . DB_PREFIX . "product_description` SET ";
 			if ($this->isEnabled('name')) {
 				$sql .= "`name`='" . $this->db->escape($product['name']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('description')) {
 				$sql .= "`description`='" . $this->db->escape($product['description']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('meta_description')) {
 				$sql .= "`meta_description`='" . $this->db->escape($product['meta_description']) . "',";
+                $flag = true;
 			}
 			if ($this->isEnabled('meta_keyword')) {
 				$sql .= "`meta_keyword`='" . $this->db->escape($product['meta_keyword']) . "',";
+                $flag = true;
 			}
+
+            if ($this->isEnabled('tags')) {
+                $sql .= "`tag`='" . $this->db->escape($product['tags']) . "',";
+                $flag = true;
+            }
+
 			$sql = rtrim(trim($sql), ',');
 			$sql .= " WHERE `product_id` = {$productId}";
 			$sql .= " AND `language_id` = {$languageId};";
-			$this->db->query($sql);
+
+            if ($flag) {
+			    $this->db->query($sql);
+            }
 
 			if ($this->isEnabled('categories') && count($product['categories']) > 0) {
                 $this->db->query("DELETE FROM `" . DB_PREFIX . "product_to_category` WHERE `product_id`='{$productId}';");
@@ -847,6 +1290,7 @@ class ModelToolShopmanager extends Model {
 						continue;
 					$sql = "INSERT INTO `" . DB_PREFIX . "product_to_category` (`product_id`,`category_id`) ";
 					$sql .= "VALUES ('{$productId}','{$categoryId}')";
+
 				    $this->db->query($sql);
 				}
 			}
@@ -870,7 +1314,6 @@ class ModelToolShopmanager extends Model {
 
 			continue;
 
-
 			$keyword = $this->db->escape($product[29]);
 
 			$tags = array();
@@ -890,27 +1333,6 @@ class ModelToolShopmanager extends Model {
 				$sql .= ";";
 				$this->db->query($sql);
 			}
-			if (count($tags) > 0) {
-				$sql = "INSERT INTO `" . DB_PREFIX . "product_tag` (`product_id`,`tag`,`language_id`) VALUES ";
-				$first = true;
-				$inserted_tags = array();
-				foreach ($tags as $tag) {
-					if ($tag == '') {
-						continue;
-					}
-					if (in_array($tag, $inserted_tags)) {
-						continue;
-					}
-					$sql .= ($first) ? "\n" : ",\n";
-					$first = false;
-					$sql .= "($productId,'" . $this->db->escape($tag) . "',$languageId)";
-					$inserted_tags[] = $tag;
-				}
-				$sql .= ";";
-				if (count($inserted_tags) > 0) {
-					$this->db->query($sql);
-				}
-			}
 		}
 
 		// final commit
@@ -929,6 +1351,10 @@ class ModelToolShopmanager extends Model {
 	}
 
 	function uploadProducts(&$reader) {
+        $this->columns = $this->getProductFildsList();
+        $this->buildFieldRelations($reader, 'product');
+        $this->columns = $this->relation;
+
 		$defaultWeightUnit = $this->getDefaultWeightUnit();
 		$defaultMeasurementUnit = $this->getDefaultMeasurementUnit();
 		$defaultStockStatusId = $this->config->get('config_stock_status_id');
@@ -946,17 +1372,18 @@ class ModelToolShopmanager extends Model {
 			}
 			$product = array();
 			$productId = trim($this->getCell($data, $i, $j++));
+
 			if ($this->isEnabled('product_id') && $productId) {
 				$product['product_id'] = $productId;
 			} else {
 				continue;
 			}
 			if ($this->isEnabled('name')) {
-				$name = trim($this->getCell($data, $i, $j++));
+				$name = trim($this->getCell($data, $i, $this->columns['name']['position']));
 				$product['name'] = htmlentities($name, ENT_QUOTES, $this->detect_encoding($name));
 			}
 			if ($this->isEnabled('categories')) {
-				$categories = $this->getCell($data, $i, $j++);
+				$categories = $this->getCell($data, $i, $this->columns['categories']['position']);
 				$categories = trim($this->clean($categories, false));
 				$product['categories'] = ($categories == "") ? array() : explode(",", $categories);
 				if ($product['categories'] === false) {
@@ -964,55 +1391,55 @@ class ModelToolShopmanager extends Model {
 				}
 			}
 			if ($this->isEnabled('sku')) {
-				$product['sku'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['sku'] = trim($this->getCell($data, $i, $this->columns['sku']['position'], '0'));
 			}
 			if ($this->isEnabled('location')) {
-				$product['location'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['location'] = trim($this->getCell($data, $i, $this->columns['location']['position'], '0'));
 			}
 			if ($this->isEnabled('quantity')) {
-				$product['quantity'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['quantity'] = trim($this->getCell($data, $i, $this->columns['quantity']['position'], '0'));
 			}
 			if ($this->isEnabled('model')) {
-				$product['model'] = $this->getCell($data, $i, $j++, '   ');
+				$product['model'] = $this->getCell($data, $i, $this->columns['model']['position'], '   ');
 			}
 			if ($this->isEnabled('manufacturer')) {
-				$product['manufacturer'] = trim($this->getCell($data, $i, $j++));
+				$product['manufacturer'] = trim($this->getCell($data, $i, $this->columns['manufacturer']['position']));
 			}
 			if ($this->isEnabled('image')) {
-				$product['image'] = mysql_real_escape_string($this->getCell($data, $i, $j++));
+				$product['image'] = mysql_real_escape_string($this->getCell($data, $i, $this->columns['image']['position']));
 			}
 			if ($this->isEnabled('shipping')) {
-				$product['shipping'] = trim($this->getCell($data, $i, $j++, 'yes'));
+				$product['shipping'] = trim($this->getCell($data, $i, $this->columns['shipping']['position'], 'yes'));
 			}
 			if ($this->isEnabled('price')) {
-				$product['price'] = trim($this->getCell($data, $i, $j++, '0.00'));
+				$product['price'] = trim($this->getCell($data, $i, $this->columns['price']['position'], '0.00'));
 			}
 			if ($this->isEnabled('weight')) {
-				$product['weight'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['weight'] = trim($this->getCell($data, $i, $this->columns['weight']['position'], '0'));
 			}
 			if ($this->isEnabled('unit')) {
-				$product['unit'] = trim($this->getCell($data, $i, $j++, $defaultWeightUnit));
+				$product['unit'] = trim($this->getCell($data, $i, $this->columns['unit']['position'], $defaultWeightUnit));
 			}
 			if ($this->isEnabled('length')) {
-				$product['length'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['length'] = trim($this->getCell($data, $i, $this->columns['length']['position'], '0'));
 			}
 			if ($this->isEnabled('width')) {
-				$product['width'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['width'] = trim($this->getCell($data, $i, $this->columns['width']['position'], '0'));
 			}
 			if ($this->isEnabled('height')) {
-				$product['height'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['height'] = trim($this->getCell($data, $i, $this->columns['height']['position'], '0'));
 			}
 			if ($this->isEnabled('length_unit')) {
-				$product['length_unit'] = trim($this->getCell($data, $i, $j++, $defaultMeasurementUnit));
+				$product['length_unit'] = trim($this->getCell($data, $i, $this->columns['length_unit']['position'], $defaultMeasurementUnit));
 			}
 			if ($this->isEnabled('status')) {
-				$product['status'] = trim($this->getCell($data, $i, $j++, 'true'));
+				$product['status'] = trim($this->getCell($data, $i, $this->columns['status']['position'], 'true'));
 			}
 			if ($this->isEnabled('tax_class_id')) {
-				$product['tax_class_id'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['tax_class_id'] = trim($this->getCell($data, $i, $this->columns['tax_class_id']['position'], '0'));
 			}
 			if ($this->isEnabled('viewed')) {
-				$product['viewed'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['viewed'] = trim($this->getCell($data, $i, $this->columns['viewed']['position'], '0'));
 			}
             /**
              * @todo Костыль детектед. Язык захардкожен, чтобы не выводить его в таблицу XLS
@@ -1025,28 +1452,28 @@ class ModelToolShopmanager extends Model {
 				//continue;
 			}
 			if ($this->isEnabled('keyword')) {
-				$product['keyword'] = trim($this->getCell($data, $i, $j++));
+				$product['keyword'] = trim($this->getCell($data, $i, $this->columns['keyword']['position']));
 			}
 			if ($this->isEnabled('description')) {
-				$description = trim($this->getCell($data, $i, $j++));
+				$description = trim($this->getCell($data, $i, $this->columns['description']['position']));
 				$product['description'] = htmlentities($description, ENT_QUOTES, $this->detect_encoding($description));
 			}
 			if ($this->isEnabled('meta_description')) {
-				$meta_description = trim($this->getCell($data, $i, $j++));
+				$meta_description = trim($this->getCell($data, $i, $this->columns['meta_description']['position']));
 				$product['meta_description'] = htmlentities($meta_description, ENT_QUOTES, $this->detect_encoding($meta_description));
 			}
 			if ($this->isEnabled('meta_keyword')) {
-				$meta_keyword = trim($this->getCell($data, $i, $j++));
+				$meta_keyword = trim($this->getCell($data, $i, $this->columns['meta_keyword']['position']));
 				$product['meta_keyword'] = htmlentities($meta_keyword, ENT_QUOTES, $this->detect_encoding($meta_keyword));
 			}
 			if ($this->isEnabled('images')) {
-				$product['images'] = trim($this->getCell($data, $i, $j++));
+				$product['images'] = trim($this->getCell($data, $i, $this->columns['images']['position']));
 			}
 			if ($this->isEnabled('stock_status_id')) {
-				$product['stock_status_id'] = trim($this->getCell($data, $i, $j++, $defaultStockStatusId));
+				$product['stock_status_id'] = trim($this->getCell($data, $i, $this->columns['stock_status_id']['position'], $defaultStockStatusId));
 			}
 			if ($this->isEnabled('store_ids')) {
-				$storeIds = $this->getCell($data, $i, $j++);
+				$storeIds = $this->getCell($data, $i, $this->columns['store_ids']['position']);
 				$storeIds = trim($this->clean($storeIds, false));
 				$product['store_ids'] = ($storeIds == "") ? array() : explode(",", $storeIds);
 				if ($product['store_ids'] === false) {
@@ -1054,45 +1481,45 @@ class ModelToolShopmanager extends Model {
 				}
 			}
 			if ($this->isEnabled('related')) {
-				$related = trim($this->getCell($data, $i, $j++));
+				$related = trim($this->getCell($data, $i, $this->columns['related']['position']));
 				$product['related'] = ($related == "") ? array() : explode(",", $related);
 				if ($product['related'] === false) {
 					$product['related'] = array();
 				}
 			}
 			if ($this->isEnabled('tags')) {
-				$tags = trim($this->getCell($data, $i, $j++));
+				$tags = trim($this->getCell($data, $i, $this->columns['tags']['position']));
 				$product['tags'] = ($tags == "") ? array() : explode(",", $tags);
 				if ($product['tags'] === false) {
 					$product['tags'] = array();
 				}
 			}
 			if ($this->isEnabled('sort_order')) {
-				$product['sort_order'] = trim($this->getCell($data, $i, $j++, '0'));
+				$product['sort_order'] = trim($this->getCell($data, $i, $this->columns['sort_order']['position'], '0'));
 			}
 			if ($this->isEnabled('subtract')) {
-				$product['subtract'] = trim($this->getCell($data, $i, $j++, 'true'));
+				$product['subtract'] = trim($this->getCell($data, $i, $this->columns['subtract']['position'], 'true'));
 			}
 			if ($this->isEnabled('minimum')) {
-				$product['minimum'] = trim($this->getCell($data, $i, $j++, '1'));
+				$product['minimum'] = trim($this->getCell($data, $i, $this->columns['minimum']['position'], '1'));
 			}
 
 			if ($this->isEnabled('date_added')) {
-				$dateAdded = trim($this->getCell($data, $i, $j++));
+				$dateAdded = trim($this->getCell($data, $i, $this->columns['date_added']['position']));
 				$product['date_added'] = ((is_string($dateAdded)) && (strlen($dateAdded) > 0)) ? $dateAdded : "NOW()";
 			}
 			if ($this->isEnabled('date_modified')) {
-				$dateModified = trim($this->getCell($data, $i, $j++));
+				$dateModified = trim($this->getCell($data, $i, $this->columns['date_modified']['position']));
 				$product['date_modified'] = ((is_string($dateModified)) && (strlen($dateModified) > 0)) ? $dateModified : "NOW()";
 			}
 			if ($this->isEnabled('date_available')) {
-				$dateAvailable = trim($this->getCell($data, $i, $j++));
+				$dateAvailable = trim($this->getCell($data, $i, $this->columns['date_available']['position']));
 				$product['date_available'] = ((is_string($dateAvailable)) && (strlen($dateAvailable) > 0)) ? $dateAvailable : "NOW()";
 			}
+
 			$products[$productId] = $product;
 			$j = 1;
-		}
-
+        }
 		return $this->updateProductsInDB($products);
 	}
 
@@ -1102,8 +1529,8 @@ class ModelToolShopmanager extends Model {
 	 * @param type $categories
 	 * @return type
 	 */
-	protected function updateCategoriesInDB(&$categories) {
-
+	protected function updateCategoriesInDB(&$categories)
+    {
 		$this->import("START TRANSACTION;");
 		// generate and execute SQL for inserting the categories
 		foreach ($categories as $category) {
@@ -1114,31 +1541,40 @@ class ModelToolShopmanager extends Model {
 				continue;
 			}
 
+            $flag = false;
 			$sql = "UPDATE `" . DB_PREFIX . "category` SET ";
-			if ($this->isEnabled('parent_id')) {
+			if ($this->isEnabled('parent_id') && isset($category['parent_id'])) {
 				$sql .= "`parent_id`='" . (int) $category['parent_id'] . "',";
+                $flag = true;
 			}
-			if ($this->isEnabled('image')) {
+			if ($this->isEnabled('image') && isset($category['image'])) {
 				$sql .= "`image`='{$category['image']}', ";
+                $flag = true;
 			}
-			if ($this->isEnabled('sort_order')) {
+			if ($this->isEnabled('sort_order') && isset($category['sort_order'])) {
 				$sql .= "`sort_order`='{$category['sort_order']}', ";
+                $flag = true;
 			}
-			if ($this->isEnabled('date_added')) {
+			if ($this->isEnabled('date_added') && isset($category['date_added'])) {
 				$category['date_added'] = ($category['date_added'] == 'NOW()') ? "{$category['date_added']}" : "'{$category['date_added']}'";
 				$sql .= "`date_added`={$category['date_added']}, ";
+                $flag = true;
 			}
-			if ($this->isEnabled('date_modified')) {
+			if ($this->isEnabled('date_modified') && isset($category['date_modified'])) {
 				$category['date_modified'] = ($category['date_modified'] == 'NOW()') ? "{$category['date_modified']}" : "'{$category['date_modified']}'";
 				$sql .= "`date_modified`={$category['date_modified']}, ";
+                $flag = true;
 			}
-			if ($this->isEnabled('status')) {
+			if ($this->isEnabled('status') && isset($category['status'])) {
 				$status = ((strtolower($category['status']) == "true") || (strtoupper($category['status']) == "YES") || (strtoupper($category['status']) == "ENABLED")) ? 1 : 0;
 				$sql .= "`status`='{$status}', ";
+                $flag = true;
 			}
 			$sql = rtrim(trim($sql), ',') . " WHERE `category_id` = {$categoryId};";
 
-			$this->db->query($sql);
+            if ($flag) {
+			    $this->db->query($sql);
+            }
 
 			if ($this->isEnabled('language_id') && $category['language_id']) {
 				$languageId = $category['language_id'];
@@ -1146,40 +1582,45 @@ class ModelToolShopmanager extends Model {
                 $languageId = $this->languageId;
 			}
 
-			$sql = "UPDATE `" . DB_PREFIX . "category_description` SET ";
-			if ($this->isEnabled('name')) {
-				$sql .= "`name`='" . $this->db->escape($category['name']) . "',";
-			}
-			if ($this->isEnabled('description')) {
-				$sql .= "`description`='" . $this->db->escape($category['description']) . "',";
-			}
-			/*if ($this->isEnabled('meta_title')) {
-				$sql .= "`meta_title`='" . $this->db->escape($category['meta_title']) . "',";
-			}*/
-			if ($this->isEnabled('meta_description')) {
-				$sql .= "`meta_description`='" . $this->db->escape($category['meta_description']) . "',";
-			}
 
-			if ($this->isEnabled('meta_keyword')) {
-				$sql .= "`meta_keyword`='" . $this->db->escape($category['meta_keyword']) . "',";
-			}
+            if (isset($category['name']) || isset($category['description']) || isset($category['meta_description']) || isset($category['meta_keyword'])) {
+                $sql = "UPDATE `" . DB_PREFIX . "category_description` SET ";
+                if ($this->isEnabled('name') && isset($category['name'])) {
+                    $sql .= "`name`='" . $this->db->escape($category['name']) . "',";
+                }
+                if ($this->isEnabled('description') && isset($category['description'])) {
+                    $sql .= "`description`='" . $this->db->escape($category['description']) . "',";
+                }
+                if ($this->isEnabled('meta_description') && isset($category['meta_description'])) {
+                    $sql .= "`meta_description`='" . $this->db->escape($category['meta_description']) . "',";
+                }
 
-			$sql = rtrim(trim($sql), ',');
-			$sql .= " WHERE `category_id` = {$categoryId}";
-			$sql .= " AND `language_id` = {$languageId};";
+                if ($this->isEnabled('meta_keyword') && isset($category['meta_keyword'])) {
+                    $sql .= "`meta_keyword`='" . $this->db->escape($category['meta_keyword']) . "',";
+                }
 
-			$this->db->query($sql);
-			if ($this->isEnabled('keyword')) {
-				$sql = "INSERT INTO `" . DB_PREFIX . "url_alias` (`query`,`keyword`) ";
+                $sql = rtrim(trim($sql), ',');
+                $sql .= " WHERE `category_id` = {$categoryId}";
+                $sql .= " AND `language_id` = {$languageId};";
+
+                $this->db->query($sql);
+            }
+
+
+			if ($this->isEnabled('keyword') && isset($category['keyword'])) {
+                $sql = "DELETE FROM " . DB_PREFIX . "url_alias  WHERE query = 'category_id={$categoryId}'";
+                $this->db->query($sql);
+                $sql = "INSERT INTO `" . DB_PREFIX . "url_alias` (`query`,`keyword`) ";
 				$sql .= "VALUES ('category_id={$categoryId}','{$category['keyword']}') ";
 				$sql .= "ON DUPLICATE KEY UPDATE `query`='category_id={$categoryId}',`keyword`='{$category['keyword']}';";
 				$this->db->query($sql);
 			}
-			if ($this->isEnabled('store_ids')) {
+
+			if ($this->isEnabled('store_ids') &&  isset($category['store_ids'])) {
 				foreach ($category['store_ids'] as $storeId) {
 					if ($storeId == '')
 						continue;
-					$sql = "INSERT INTO `" . DB_PREFIX . "category_to_store` (`category_id`,`store_id`) ";
+                    $sql = "INSERT INTO `" . DB_PREFIX . "category_to_store` (`category_id`,`store_id`) ";
 					$sql .= "VALUES ({$categoryId},{$storeId}) ";
 					$sql .= "ON DUPLICATE KEY UPDATE `category_id`='{$categoryId}',`store_id`='{$storeId}';";
 					$this->db->query($sql);
@@ -1191,44 +1632,90 @@ class ModelToolShopmanager extends Model {
 		return true;
 	}
 
+    protected function buildFieldRelations(&$reader, $type)
+    {
+        $this->relation = array();
+        $data = $reader->getSheet(0);
+        $relation = array();
+        switch($type) {
+            case 'category':
+                $config = $this->getCateforyFildsList();
+                for ($i = 1; $i < count($config); $i++ ) {
+                    $fieldName = $this->getCell($data, 0, $i);
+                    if (isset($config[$fieldName]) ) {
+                        $this->relation[$fieldName] = $config[$fieldName];
+                        $this->relation[$fieldName]['position'] = $i;
+                    }
+                }
+            break;
+            case 'product':
+                $config = $this->getProductFildsList();
+                for ($i = 1; $i < count($config); $i++ ) {
+                    $fieldName = $this->getCell($data, 0, $i);
+                    if (isset($config[$fieldName]) ) {
+                        $this->relation[$fieldName] = $config[$fieldName];
+                        $this->relation[$fieldName]['position'] = $i;
+                    }
+                }
+            break;
+            default:
+                return false;
+            break;
+        }
+    }
+
 	protected function uploadCategories(&$reader) {
+        $this->columns = $this->getCateforyFildsList();
+        $this->buildFieldRelations($reader, 'category');
+
 		$data = $reader->getSheet(0);
 		$categories = array();
 		$isFirstRow = true;
 		$i = 0;
 		$j = 1;
 		$k = $data->getHighestRow();
+
 		for ($i = 0; $i < $k; $i+=1) {
+
 			if ($isFirstRow) {
 				$isFirstRow = false;
 				continue;
 			}
 			$category = array();
-			$categoryId = trim($this->getCell($data, $i, $j++));
+
+            if (!isset($this->relation['category_id'])) {
+                return;
+            }
+
+			$categoryId = trim($this->getCell($data, $i, $this->relation['category_id']['position']));
 			if ($this->isEnabled('category_id') && $categoryId) {
 				$category['category_id'] = $categoryId;
 			} else {
 				continue;
 			}
-			if ($this->isEnabled('parent_id')) {
-				$category['parent_id'] = trim($this->getCell($data, $i, $j++, '0'));
+
+			if ($this->isEnabled('parent_id') && isset($this->relation['parent_id'])) {
+				$category['parent_id'] = trim($this->getCell($data, $i, $this->relation['parent_id']['position'], '0'));
 			}
-			if ($this->isEnabled('name')) {
-				$name = trim($this->getCell($data, $i, $j++));
+
+			if ($this->isEnabled('name') && isset($this->relation['name'])) {
+				$name = trim($this->getCell($data, $i, $this->relation['name']['position']));
 				$category['name'] = htmlentities($name, ENT_QUOTES, $this->detect_encoding($name));
 			}
-			if ($this->isEnabled('sort_order')) {
-				$category['sort_order'] = trim($this->getCell($data, $i, $j++));
+
+			if ($this->isEnabled('sort_order') && isset($this->relation['sort_order'])) {
+				$category['sort_order'] = trim($this->getCell($data, $i, $this->relation['sort_order']['position']));
 			}
-			if ($this->isEnabled('image')) {
-				$category['image'] = trim($this->getCell($data, $i, $j++));
+			if ($this->isEnabled('image') && isset($this->relation['image'])) {
+				$category['image'] = trim($this->getCell($data, $i, $this->relation['image']['position']));
+
 			}
-			if ($this->isEnabled('date_added')) {
-				$dateAdded = trim($this->getCell($data, $i, $j++));
+			if ($this->isEnabled('date_added') && isset($this->relation['date_added'])) {
+				$dateAdded = trim($this->getCell($data, $i, $this->relation['date_added']['position']));
 				$category['date_added'] = ((is_string($dateAdded)) && (strlen($dateAdded) > 0)) ? $dateAdded : "NOW()";
 			}
-			if ($this->isEnabled('date_modified')) {
-				$dateModified = trim($this->getCell($data, $i, $j++));
+			if ($this->isEnabled('date_modified') && isset($this->relation['date_modified'])) {
+				$dateModified = trim($this->getCell($data, $i, $this->relation['date_modified']['position']));
 				$category['date_modified'] = ((is_string($dateModified)) && (strlen($dateModified) > 0)) ? $dateModified : "NOW()";
 			}
             /**
@@ -1241,35 +1728,34 @@ class ModelToolShopmanager extends Model {
                 $category['language_id'] = $this->languageId;
 				//continue;
 			}
-			if ($this->isEnabled('keyword')) {
-				$category['keyword'] = trim($this->getCell($data, $i, $j++));
+
+
+			if ($this->isEnabled('keyword') && isset($this->relation['keyword'])) {
+				$category['keyword'] = trim($this->getCell($data, $i, $this->relation['keyword']['position']));
 			}
-			if ($this->isEnabled('description')) {
-				$description = trim($this->getCell($data, $i, $j++));
+
+			if ($this->isEnabled('description') && isset($this->relation['description']) ) {
+				$description = trim($this->getCell($data, $i, $this->relation['description']['position']));
 				$category['description'] = htmlentities($description, ENT_QUOTES, $this->detect_encoding($description));
 			}
-			/*if ($this->isEnabled('meta_title')) {
-				$meta_title = trim($this->getCell($data, $i, $j++));
-				$category['meta_title'] = htmlentities($meta_title, ENT_QUOTES, $this->detect_encoding($meta_title));
-			}*/
-			if ($this->isEnabled('meta_description')) {
-				$meta_description = trim($this->getCell($data, $i, $j++));
+			if ($this->isEnabled('meta_description') && isset($this->relation['meta_description'])) {
+				$meta_description = trim($this->getCell($data, $i, $this->relation['meta_description']['position']));
 				$category['meta_description'] = htmlentities($meta_description, ENT_QUOTES, $this->detect_encoding($meta_description));
 			}
-			if ($this->isEnabled('meta_keyword')) {
-				$meta_keyword = trim($this->getCell($data, $i, $j++));
+			if ($this->isEnabled('meta_keyword') && isset($this->relation['meta_keyword'])) {
+				$meta_keyword = trim($this->getCell($data, $i, $this->relation['meta_keyword']['position']));
 				$category['meta_keyword'] = htmlentities($meta_keyword, ENT_QUOTES, $this->detect_encoding($meta_keyword));
 			}
-			if ($this->isEnabled('store_ids')) {
-				$storeIds = $this->getCell($data, $i, $j++);
+			if ($this->isEnabled('store_ids') && isset($this->relation['store_ids'])) {
+				$storeIds = $this->getCell($data, $i, $this->relation['store_ids']['position']);
 				$storeIds = trim($this->clean($storeIds, false));
 				$category['store_ids'] = ($storeIds == "") ? array() : explode(",", $storeIds);
 				if ($category['store_ids'] === false) {
 					$category['store_ids'] = array();
 				}
 			}
-			if ($this->isEnabled('status')) {
-				$category['status'] = trim($this->getCell($data, $i, $j++, 'true'));
+			if ($this->isEnabled('status') && isset($this->relation['status'])) {
+				$category['status'] = trim($this->getCell($data, $i, $this->relation['status']['position'], 'true'));
 			}
 
 			$categories[$categoryId] = $category;
@@ -1278,10 +1764,8 @@ class ModelToolShopmanager extends Model {
 		return $this->updateCategoriesInDB($categories);
 	}
 
-	function storeOptionNamesIntoDatabase(&$options, &$optionIds) {
-
-
-
+	function storeOptionNamesIntoDatabase(&$options, &$optionIds)
+    {
 // add option names, ids, and sort orders to the database
 		$maxOptionId = 0;
 		$sortOrder = 0;
@@ -1296,9 +1780,7 @@ class ModelToolShopmanager extends Model {
 			if ($productId == "") {
 				continue;
 			}
-//			if ($langId != $languageId) {
-//				continue;
-//			}
+
 			if ($name == "") {
 				continue;
 			}
@@ -1684,6 +2166,9 @@ class ModelToolShopmanager extends Model {
 	 * @return boolean
 	 */
 	function validateHeading(&$reader, $group) {
+        return true;
+
+        /*
 		$this->loadColumns($group);
 		$expected = $this->getColumns(true, true);
 
@@ -1713,6 +2198,7 @@ class ModelToolShopmanager extends Model {
 			}
 		}
 		return $valid;
+        */
 	}
 
 
@@ -1738,6 +2224,17 @@ class ModelToolShopmanager extends Model {
 		// Set the column widths
 		$j = 0;
 		$i = 0;
+
+        $config = $this->getConfig();
+        $categoryFields = isset($config['category']) ? $config['category'] : array();
+
+        foreach($this->columns as $key => $column) {
+            if (!isset($categoryFields[$key])) {
+                $this->columns[$key]['enabled'] = false;
+            }
+        }
+
+
 		foreach ($this->columns as $colId => $colData) {
 			if (!$colData['enabled'])
 				continue;
@@ -1749,7 +2246,7 @@ class ModelToolShopmanager extends Model {
 
 		$worksheet->setRow($i, 30, $this->boxFormat);
 
-		// The actual categories data
+
 		$i++;
 		$j = 0;
 		$storeIds = $this->getStoreIdsForCategories();
@@ -1762,7 +2259,7 @@ class ModelToolShopmanager extends Model {
 		$result = $this->db->query($query);
 
 		foreach ($result->rows as $row) {
-			if ($this->isEnabled('category_id') && ($categoryId = (int) $row['category_id'])) {
+			if ($categoryId = (int) $row['category_id']) {
 				$worksheet->write($i, $j++, $categoryId);
 			} else {
 				continue;
@@ -1786,8 +2283,6 @@ class ModelToolShopmanager extends Model {
 				$worksheet->writeString($i, $j++, ($row['keyword']) ? $row['keyword'] : '' );
 			if ($this->isEnabled('description'))
 				$worksheet->writeString($i, $j++, html_entity_decode($row['description'], ENT_QUOTES, 'UTF-8'));
-		//if ($this->isEnabled('meta_title'))
-		//	$worksheet->writeString($i, $j++, html_entity_decode($row['meta_title'], ENT_QUOTES, 'UTF-8'));
 			if ($this->isEnabled('meta_description'))
 				$worksheet->writeString($i, $j++, html_entity_decode($row['meta_description'], ENT_QUOTES, 'UTF-8'));
 			if ($this->isEnabled('meta_keyword'))
@@ -1828,16 +2323,29 @@ class ModelToolShopmanager extends Model {
 
 	function populateProductsWorksheet(&$worksheet) {
 		// Set the column widths
+        $config = $this->getConfig();
+        $productFields = $config['product'];
+
+        foreach ($this->columns as $key => $column ) {
+            if ( !isset($productFields[$key]) ) {
+                $this->columns[$key]['enabled'] = false;
+            }
+            else {
+                $this->columns[$key]['enabled'] = true;
+            }
+        }
+
 		$j = 0;
 		$i = 0;
 		foreach ($this->columns as $colId => $colData) {
-			if (!$colData['enabled'])
-				continue;
-			$j++;
-			$worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
-			// The heading row
-			$worksheet->writeString($i, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
+			if ($colData['enabled'] && isset($productFields[$colId]) ) {
+			    $j++;
+			    $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
+			    // The heading row
+			    $worksheet->writeString($i, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
+            }
 		}
+
 
 		$worksheet->setRow($i, 30, $this->boxFormat);
 
@@ -1904,7 +2412,7 @@ class ModelToolShopmanager extends Model {
 		$query .= "  p.subtract, ";
 		$query .= "  p.minimum, ";
 		$query .= "  GROUP_CONCAT( DISTINCT CAST(pr.related_id AS CHAR(11)) SEPARATOR \",\" ) AS related, ";
-		$query .= "  GROUP_CONCAT( DISTINCT pt.tag SEPARATOR \",\" ) AS tags ";
+		$query .= "  pd.tag AS tags ";
 		$query .= "FROM `" . DB_PREFIX . "product` p ";
 		$query .= "LEFT JOIN `" . DB_PREFIX . "product_description` pd ON p.product_id=pd.product_id ";
 		$query .= "  AND pd.language_id='{$this->languageId}' ";
@@ -1917,8 +2425,6 @@ class ModelToolShopmanager extends Model {
 		$query .= "LEFT JOIN `" . DB_PREFIX . "length_class_description` mc ON mc.length_class_id=p.length_class_id ";
 		$query .= "  AND mc.language_id='{$this->languageId}' ";
 		$query .= "LEFT JOIN `" . DB_PREFIX . "product_related` pr ON pr.product_id=p.product_id ";
-		$query .= "LEFT JOIN `" . DB_PREFIX . "product_tag` pt ON pt.product_id=p.product_id ";
-		$query .= "  AND pt.language_id='{$this->languageId}' ";
 		$query .= "GROUP BY p.product_id ";
 		$query .= "ORDER BY p.product_id, pc.category_id; ";
 
