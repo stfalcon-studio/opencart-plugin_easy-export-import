@@ -24,4 +24,3 @@ $_['text_success_category'] = 'Категории обновлены!';
 // Button labels
 $_['button_import'] = 'Импортировать';
 $_['button_export'] = 'Экспортировать';
-?>

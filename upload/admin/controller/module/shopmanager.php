@@ -1,12 +1,29 @@
 <?php
+
+/**
+ * ControllerModuleShopmanager
+ *
+ * @copyright  2012 Stfalcon (http://stfalcon.com/)
+ */
 class ControllerModuleShopmanager extends Controller {
+
+    /**
+     * Error messages
+     *
+     * @var array
+     */
     private $error = array();
 
+    /**
+     * Processed main template and send file to upload data
+     */
     public function index()
     {
         $this->load->language('module/shopmanager');
         $this->load->model('module/shopmanager');
 
+
+        // send to upload data if file exists on $_POST
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateImport()) {
             $file = $this->request->files['upload']['tmp_name'];
             $group = $this->request->post['group'];
@@ -80,9 +97,9 @@ class ControllerModuleShopmanager extends Controller {
     }
 
     /**
-     * Экспорт в XLS
+     * Export data to Excel
      *
-     * @return good mood
+     * @return message if error
      */
     public function export() {
         if ($this->validateExport()) {
@@ -121,34 +138,22 @@ class ControllerModuleShopmanager extends Controller {
     }
 
     /**
-     * Проверки для импорта
+     * Validate permision of user
      *
-     * @return type
+     * @return boolean Error
      */
     private function validateImport() {
 
         if (!$this->user->hasPermission('modify', 'module/shopmanager')) {
             $this->error['warning'] = $this->language->get('error_permission');
         }
-
-
-        /*
-        if (!$this->error)
-            $this->validateUpload();
-
-
-        if (!$this->error)
-            $this->validateImportGroup($this->request->post);
-        */
-
-
         return (!$this->error) ? true : false;
     }
 
     /**
-     * Проверки для экспорта
+     * Validate user permission on import process
      *
-     * @return type
+     * @return boolean error
      */
     private function validateExport() {
 
@@ -158,7 +163,6 @@ class ControllerModuleShopmanager extends Controller {
 
         if (!$this->error)
             $this->validateImportGroup($this->request->post);
-
 
         return (!$this->error) ? true : false;
     }
@@ -178,13 +182,13 @@ class ControllerModuleShopmanager extends Controller {
     }
 
     /**
-     * Проверка на допустимые группы импорта / экспорта
+     * Check for permissible Import/Export groups
      *
-     * @param type $request
-     * @return type
+     * @param string $request ("category" or "product") groups for import
+     * @return boolean validated
      */
     private function validateImportGroup($request) {
-        // Допустимые группы импорта / экспорта
+        //settings array - possible groups
         $import_groups = array('category', 'product');
 
         if (!isset($request['group']) || !in_array($request['group'], $import_groups)) {
@@ -195,7 +199,10 @@ class ControllerModuleShopmanager extends Controller {
     }
 
 
-
+    /**
+     * Processed installation of module settings table
+     *
+     */
     public function install()
     {
         $sql = "CREATE TABLE `". DB_PREFIX ."shopmanager_config` (
@@ -204,7 +211,7 @@ class ControllerModuleShopmanager extends Controller {
                 `field` varchar(255) NOT NULL,
                 PRIMARY KEY (`config_id`),
                 KEY `group` (`group`(10))
-        ) ENGINE=MyISAM AUTO_INCREMENT=539 DEFAULT CHARSET=utf8;";
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
         $this->db->query($sql);
     }
 
