@@ -136,6 +136,17 @@ class ModelModuleShopmanager extends Model
         return $settings;
     }
 
+    public function install(){
+         $sql = "CREATE TABLE `". DB_PREFIX ."shopmanager_config` (
+            `config_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+            `group` varchar(60) NOT NULL,
+            `field` varchar(255) NOT NULL,
+            PRIMARY KEY (`config_id`),
+            KEY `group` (`group`(10))
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
+         $this->db->query($sql);
+    }
+
     /**
      * Write config data to base
      *
@@ -1288,11 +1299,13 @@ class ModelModuleShopmanager extends Model
             foreach ($this->relation as $relKey => $relation) {
                 if (isset($relation['position'])) {
                     $tmp = trim($this->getCell($data, $i, $relation['position']));
-                    $product[$relKey] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
+                    //$product[$relKey] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
+                    $product[$relKey] = $this->encodeCharacters($tmp);
                 } else {
                     foreach ($relation as $langCode => $sublanguage) {
                         $tmp = trim($this->getCell($data, $i, $relation[$langCode]['position']));
-                        $product[$relKey][$langCode] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
+                        //$product[$relKey][$langCode] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
+                        $product[$relKey][$langCode] = $this->encodeCharacters($tmp);
                     }
                 }
             }
@@ -1303,6 +1316,10 @@ class ModelModuleShopmanager extends Model
 
         // transfer to database insert
         return $this->updateProductsInDB($products);
+    }
+
+    protected function encodeCharacters ($message) {
+        return str_replace('\'','&#39',$message);
     }
 
     /**
