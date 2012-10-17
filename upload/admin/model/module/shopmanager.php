@@ -7,51 +7,53 @@ static $config = NULL;
 static $log = NULL;
 
 // Error Handlers
-function shopmanager_error_handler($errno, $errstr, $errfile, $errline) {
-	global $config;
-	global $log;
+function shopmanager_error_handler($errno, $errstr, $errfile, $errline)
+{
+    global $config;
+    global $log;
 
-	switch ($errno) {
-		case E_NOTICE:
-		case E_USER_NOTICE:
-			$errors = "Notice";
-			break;
-		case E_WARNING:
-		case E_USER_WARNING:
-			$errors = "Warning";
-			break;
-		case E_ERROR:
-		case E_USER_ERROR:
-			$errors = "Fatal Error";
-			break;
-		default:
-			$errors = "Unknown";
-			break;
-	}
+    switch ($errno) {
+        case E_NOTICE:
+        case E_USER_NOTICE:
+            $errors = "Notice";
+            break;
+        case E_WARNING:
+        case E_USER_WARNING:
+            $errors = "Warning";
+            break;
+        case E_ERROR:
+        case E_USER_ERROR:
+            $errors = "Fatal Error";
+            break;
+        default:
+            $errors = "Unknown";
+            break;
+    }
 
-	if (($errors == 'Warning') || ($errors == 'Unknown')) {
-		return true;
-	}
+    if (($errors == 'Warning') || ($errors == 'Unknown')) {
+        return true;
+    }
 
-	if ($config->get('config_error_display')) {
-		echo '<b>' . $errors . '</b>: ' . $errstr . ' in <b>' . $errfile . '</b> on line <b>' . $errline . '</b>';
-	}
+    if ($config->get('config_error_display')) {
+        echo '<b>' . $errors . '</b>: ' . $errstr . ' in <b>' . $errfile . '</b> on line <b>' . $errline . '</b>';
+    }
 
-	if ($config->get('config_error_log')) {
-		$log->write('PHP ' . $errors . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
-	}
+    if ($config->get('config_error_log')) {
+        $log->write('PHP ' . $errors . ':  ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
+    }
 
-	return true;
+    return true;
 }
 
 /**
  * create error handler
  */
-function shopmanager_error_shutdown_handler() {
-	$last_error = error_get_last();
-	if ($last_error['type'] === E_ERROR) {
-		shopmanager_error_handler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
-	}
+function shopmanager_error_shutdown_handler()
+{
+    $last_error = error_get_last();
+    if ($last_error['type'] === E_ERROR) {
+        shopmanager_error_handler(E_ERROR, $last_error['message'], $last_error['file'], $last_error['line']);
+    }
 }
 
 /**
@@ -61,26 +63,27 @@ function shopmanager_error_shutdown_handler() {
  *
  * @copyright  2012 Stfalcon (http://stfalcon.com/)
  */
-class ModelModuleShopmanager extends Model {
+class ModelModuleShopmanager extends Model
+{
 
     /**
      * @var string : database config table (without prefix)
      */
     public $configTable = 'shopmanager_config';
 
-	/**
-	 * Current language
-	 * @var int current language id
-	 */
-	protected $languageId = 1;
+    /**
+     * Current language
+     * @var int current language id
+     */
+    protected $languageId = 1;
 
 
-     /**
-	 * Cell's format
-	 *
-	 * @var Spreadsheet_Excel_Writer format
-	 */
-	protected $priceFormat, $boxFormat, $weightFormat, $textFormat;
+    /**
+     * Cell's format
+     *
+     * @var Spreadsheet_Excel_Writer format
+     */
+    protected $priceFormat, $boxFormat, $weightFormat, $textFormat;
     /**
      * @var array | columns which used on import export
      */
@@ -97,19 +100,19 @@ class ModelModuleShopmanager extends Model {
     public $relation = array();
 
 
-
     /**
      * Initialisation of module
      */
-    protected function init() {
-		global $config;
-		global $log;
-		$config = $this->config;
-		$log = $this->log;
-		set_error_handler('shopmanager_error_handler', E_ALL);
-		register_shutdown_function('shopmanager_error_shutdown_handler');
-		$this->loadDefaultLanguage();
-	}
+    protected function init()
+    {
+        global $config;
+        global $log;
+        $config = $this->config;
+        $log = $this->log;
+        set_error_handler('shopmanager_error_handler', E_ALL);
+        register_shutdown_function('shopmanager_error_shutdown_handler');
+        $this->loadDefaultLanguage();
+    }
 
     /**
      * Get config data from base
@@ -118,7 +121,7 @@ class ModelModuleShopmanager extends Model {
      */
     public function getConfig()
     {
-        $sql = "SELECT * FROM " . DB_PREFIX . $this->configTable ;
+        $sql = "SELECT * FROM " . DB_PREFIX . $this->configTable;
 
         $result = $this->db->query($sql);
 
@@ -165,12 +168,12 @@ class ModelModuleShopmanager extends Model {
                 }
 
                 if ($flag) {
-                    $sql = substr($sql,0,-1);
+                    $sql = substr($sql, 0, -1);
                     $this->db->query($sql .= ';');
                 }
                 break;
             default:
-            break;
+                break;
         }
     }
 
@@ -628,56 +631,56 @@ class ModelModuleShopmanager extends Model {
     );
 
     /**
-	 * Loading XLS data to MySQL
-	 *
-	 * @param string $filename
-	 * @param string $group ('category', 'product')
+     * Loading XLS data to MySQL
      *
-	 * @return boolean is successful finished
-	 */
-	public function upload($filename, $group)
+     * @param string $filename
+     * @param string $group ('category', 'product')
+     *
+     * @return boolean is successful finished
+     */
+    public function upload($filename, $group)
     {
-		$this->init();
-		ini_set("memory_limit", "768M");
+        $this->init();
+        ini_set("memory_limit", "768M");
 
-		require_once 'PHPExcel/Classes/PHPExcel.php';
-		$cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_in_memory_serialized;
-		$inputFileType = PHPExcel_IOFactory::identify($filename);
-		$objReader = PHPExcel_IOFactory::createReader($inputFileType);
-		$objReader->setReadDataOnly(true);
-		PHPExcel_Settings::setCacheStorageMethod($cacheMethod);
-		$reader = $objReader->load($filename);
+        require_once 'PHPExcel/Classes/PHPExcel.php';
+        $cacheMethod = PHPExcel_CachedObjectStorageFactory::cache_in_memory_serialized;
+        $inputFileType = PHPExcel_IOFactory::identify($filename);
+        $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+        $objReader->setReadDataOnly(true);
+        PHPExcel_Settings::setCacheStorageMethod($cacheMethod);
+        $reader = $objReader->load($filename);
 
         switch (trim($group)) {
-			case 'category':
+            case 'category':
                 //clearing the cache
-				$this->cache->delete('category');
-				$this->cache->delete('category_description');
-				$this->cache->delete('url_alias');
+                $this->cache->delete('category');
+                $this->cache->delete('category_description');
+                $this->cache->delete('url_alias');
                 //processed data
-				$result = $this->uploadCategories($reader);
-				break;
-			case 'product':
-				$this->cache->delete('manufacturer');
-				$this->cache->delete('product');
-				$this->cache->delete('product_image');
-				$this->cache->delete('product_option');
-				$this->cache->delete('product_option_description');
-				$this->cache->delete('product_option_value');
-				$this->cache->delete('product_option_value_description');
-				$this->cache->delete('product_to_category');
-				$this->cache->delete('url_alias');
-				$this->cache->delete('product_special');
-				$this->cache->delete('product_discount');
-				$result = $this->uploadProducts($reader);
-				break;
-			default:
-				return false;
-		}
-		$reader->disconnectWorksheets();
-		unset($reader);
-		return $result;
-	}
+                $result = $this->uploadCategories($reader);
+                break;
+            case 'product':
+                $this->cache->delete('manufacturer');
+                $this->cache->delete('product');
+                $this->cache->delete('product_image');
+                $this->cache->delete('product_option');
+                $this->cache->delete('product_option_description');
+                $this->cache->delete('product_option_value');
+                $this->cache->delete('product_option_value_description');
+                $this->cache->delete('product_to_category');
+                $this->cache->delete('url_alias');
+                $this->cache->delete('product_special');
+                $this->cache->delete('product_discount');
+                $result = $this->uploadProducts($reader);
+                break;
+            default:
+                return false;
+        }
+        $reader->disconnectWorksheets();
+        unset($reader);
+        return $result;
+    }
 
     /**
      * Load group config data
@@ -685,36 +688,37 @@ class ModelModuleShopmanager extends Model {
      * @param $group | string processed group type
      * @return bool processing success
      */
-    public function loadColumns($group) {
-		switch ($group) {
-			case 'category':
-				$this->columns = $this->getCateforyFildsList();
-				break;
-			case 'product':
-				$this->columns = $this->getProductFildsList();
-				break;
-			default:
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Export group to Excel
-	 *
-	 * @param string $group
-	 * @return boolean processing success
-	 */
-	public function export($group)
+    public function loadColumns($group)
     {
-		$this->init();
-		ini_set("memory_limit", "128M");
-		require_once 'Spreadsheet/Excel/Writer.php';
+        switch ($group) {
+            case 'category':
+                $this->columns = $this->getCateforyFildsList();
+                break;
+            case 'product':
+                $this->columns = $this->getProductFildsList();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Export group to Excel
+     *
+     * @param string $group
+     * @return boolean processing success
+     */
+    public function export($group)
+    {
+        $this->init();
+        ini_set("memory_limit", "128M");
+        require_once 'Spreadsheet/Excel/Writer.php';
 
         // Creating a workbook
-		$workbook = new Spreadsheet_Excel_Writer();
-		$workbook->setVersion(8); // Use Excel97/2000 Format
-		// Creating the categories worksheet
+        $workbook = new Spreadsheet_Excel_Writer();
+        $workbook->setVersion(8); // Use Excel97/2000 Format
+        // Creating the categories worksheet
 
         $this->priceFormat = & $workbook->addFormat(
             array('Size' => 10,
@@ -738,52 +742,53 @@ class ModelModuleShopmanager extends Model {
 
         $group = strtolower(trim($group));
 
-		// sending HTTP headers
-		$workbook->send('backup_' . $group . '_' . date('Ymd') . '.xls');
+        // sending HTTP headers
+        $workbook->send('backup_' . $group . '_' . date('Ymd') . '.xls');
 
-		$worksheetName = ucfirst(str_replace('_', ' ', $group));
-		$worksheet = & $workbook->addWorksheet($worksheetName);
+        $worksheetName = ucfirst(str_replace('_', ' ', $group));
+        $worksheet = & $workbook->addWorksheet($worksheetName);
 
-		$this->loadColumns($group);
+        $this->loadColumns($group);
 
-		switch ($group) {
-			case 'category':
+        switch ($group) {
+            case 'category':
                 $this->columns = $this->getCateforyFildsList();
                 $this->populateCategoriesWorksheet($worksheet);
-				break;
-			case 'product':
-				$this->populateProductsWorksheet($worksheet);
-				break;
-			default:
-				return false;
-		}
+                break;
+            case 'product':
+                $this->populateProductsWorksheet($worksheet);
+                break;
+            default:
+                return false;
+        }
 
-		$worksheet->freezePanes(array(1, 1, 1, 1));
+        $worksheet->freezePanes(array(1, 1, 1, 1));
 
-		$workbook->close();
+        $workbook->close();
 
-		exit;
-	}
+        exit;
+    }
 
-	/**
-	 * Clearing import data
-	 *
-	 * @param string $str
-	 * @param bool $allowBlanks
-	 * @return string
-	 */
-	protected function clean($str, $allowBlanks=false) {
-		$result = "";
-		$n = strlen($str);
-		for ($m = 0; $m < $n; $m++) {
-			$ch = substr($str, $m, 1);
-			if (($ch == " ") && (!$allowBlanks) || ($ch == "\n") || ($ch == "\r") || ($ch == "\t") || ($ch == "\0") || ($ch == "\x0B")) {
-				continue;
-			}
-			$result .= $ch;
-		}
-		return $result;
-	}
+    /**
+     * Clearing import data
+     *
+     * @param string $str
+     * @param bool $allowBlanks
+     * @return string
+     */
+    protected function clean($str, $allowBlanks = false)
+    {
+        $result = "";
+        $n = strlen($str);
+        for ($m = 0; $m < $n; $m++) {
+            $ch = substr($str, $m, 1);
+            if (($ch == " ") && (!$allowBlanks) || ($ch == "\n") || ($ch == "\r") || ($ch == "\t") || ($ch == "\0") || ($ch == "\x0B")) {
+                continue;
+            }
+            $result .= $ch;
+        }
+        return $result;
+    }
 
 
     /**
@@ -792,14 +797,15 @@ class ModelModuleShopmanager extends Model {
      * @param array $sql
      *
      */
-    protected function import($sql) {
-		foreach (explode(";\n", $sql) as $sql) {
-			$sql = trim($sql);
-			if ($sql) {
-				$this->db->query($sql);
-			}
-		}
-	}
+    protected function import($sql)
+    {
+        foreach (explode(";\n", $sql) as $sql) {
+            $sql = trim($sql);
+            if ($sql) {
+                $this->db->query($sql);
+            }
+        }
+    }
 
 
     /**
@@ -807,18 +813,20 @@ class ModelModuleShopmanager extends Model {
      *
      * @return mixed
      */
-    protected function getDefaultWeightUnit() {
-		return $this->config->get('config_weight_class');
-	}
+    protected function getDefaultWeightUnit()
+    {
+        return $this->config->get('config_weight_class');
+    }
 
     /**
      * get system default dimension element
      *
      * @return mixed
      */
-	protected function getDefaultMeasurementUnit() {
-		return $this->config->get('config_length_class');
-	}
+    protected function getDefaultMeasurementUnit()
+    {
+        return $this->config->get('config_length_class');
+    }
 
     /**
      * create new manufacturer from imported list if notexists
@@ -828,12 +836,12 @@ class ModelModuleShopmanager extends Model {
      */
     protected function updateManufacturersInDB(&$products)
     {
-		// find all manufacturers already stored in the database
+        // find all manufacturers already stored in the database
         $keyArray = array_keys($products);
         $manufacturerName = array();
         if (isset($products[$keyArray[0]]['manufacturer'])) {
             foreach ($products as $product) {
-                if ( trim($product['manufacturer']) != '') {
+                if (trim($product['manufacturer']) != '') {
                     $manufacturerName[$product['manufacturer']] = $product['manufacturer'];
                 }
             }
@@ -841,7 +849,7 @@ class ModelModuleShopmanager extends Model {
             $result = $this->db->query($sql);
 
             $query = '';
-            foreach($manufacturerName as $mName) {
+            foreach ($manufacturerName as $mName) {
                 $flag = false;
                 foreach ($result->rows as $manufacturer) {
                     if ($manufacturer['name'] == $mName) {
@@ -854,10 +862,10 @@ class ModelModuleShopmanager extends Model {
                     $manufacturerSimple = $this->tableSimple['manufacturer'];
                     $manufacturerSimple['name'] = $mName;
 
-                    $query .= "('" .implode($manufacturerSimple, "','") . "')";
-                    $query = str_replace("'NULL'",'NULL',$query);
+                    $query .= "('" . implode($manufacturerSimple, "','") . "')";
+                    $query = str_replace("'NULL'", 'NULL', $query);
 
-                    $sql = "INSERT INTO `". DB_PREFIX . "manufacturer` VALUES {$query}";
+                    $sql = "INSERT INTO `" . DB_PREFIX . "manufacturer` VALUES {$query}";
                     $this->db->query($sql);
 
                     $lastId = $this->db->getLastId();
@@ -872,7 +880,7 @@ class ModelModuleShopmanager extends Model {
 
                     $query = '';
                     foreach ($stores as $store_id => $store) {
-                        $query .= "('" .implode(array( $lastId, $store_id ), "','") . "'),";
+                        $query .= "('" . implode(array($lastId, $store_id), "','") . "'),";
                     }
 
                     $query = rtrim(trim($query), ',');
@@ -880,72 +888,72 @@ class ModelModuleShopmanager extends Model {
                     $this->db->query($sql);
                 }
             }
-        }
-        else {
+        } else {
             return true;
         }
-		return true;
-	}
+        return true;
+    }
 
     /**
      * Get weight class data
      *
      * @return array all weight classes
      */
-    protected function getWeightClassIds() {
-		// find all weight classes already stored in the database
-		$weightClassIds = array();
-		$sql = "SELECT `weight_class_id`, `unit` FROM `" . DB_PREFIX . "weight_class_description` WHERE `language_id`='{$this->languageId}';";
-		$result = $this->db->query($sql);
-		if ($result->rows) {
-			foreach ($result->rows as $row) {
-				$weightClassId = $row['weight_class_id'];
-				$unit = $row['unit'];
-				if (!isset($weightClassIds[$unit])) {
-					$weightClassIds[$unit] = $weightClassId;
-				}
-			}
-		}
-		return $weightClassIds;
-	}
+    protected function getWeightClassIds()
+    {
+        // find all weight classes already stored in the database
+        $weightClassIds = array();
+        $sql = "SELECT `weight_class_id`, `unit` FROM `" . DB_PREFIX . "weight_class_description` WHERE `language_id`='{$this->languageId}';";
+        $result = $this->db->query($sql);
+        if ($result->rows) {
+            foreach ($result->rows as $row) {
+                $weightClassId = $row['weight_class_id'];
+                $unit = $row['unit'];
+                if (!isset($weightClassIds[$unit])) {
+                    $weightClassIds[$unit] = $weightClassId;
+                }
+            }
+        }
+        return $weightClassIds;
+    }
 
     /**
      * Get length class data
      *
      * @return array all length classes
      */
-	protected function getLengthClassIds() {
-		// find all length classes already stored in the database
-		$lengthClassIds = array();
-		$sql = "SELECT `length_class_id`, `unit` FROM `" . DB_PREFIX . "length_class_description` WHERE `language_id`='{$this->languageId}';";
-		$result = $this->db->query($sql);
-		if ($result->rows) {
-			foreach ($result->rows as $row) {
-				$lengthClassId = $row['length_class_id'];
-				$unit = $row['unit'];
-				if (!isset($lengthClassIds[$unit])) {
-					$lengthClassIds[$unit] = $lengthClassId;
-				}
-			}
-		}
-		return $lengthClassIds;
-	}
+    protected function getLengthClassIds()
+    {
+        // find all length classes already stored in the database
+        $lengthClassIds = array();
+        $sql = "SELECT `length_class_id`, `unit` FROM `" . DB_PREFIX . "length_class_description` WHERE `language_id`='{$this->languageId}';";
+        $result = $this->db->query($sql);
+        if ($result->rows) {
+            foreach ($result->rows as $row) {
+                $lengthClassId = $row['length_class_id'];
+                $unit = $row['unit'];
+                if (!isset($lengthClassIds[$unit])) {
+                    $lengthClassIds[$unit] = $lengthClassId;
+                }
+            }
+        }
+        return $lengthClassIds;
+    }
 
     /**
      * @param string $name manufacturer name
      * @return int manufacturer id
      */
-    protected function getManufacturerByName( $name )
+    protected function getManufacturerByName($name)
     {
         $defaultManufacturer = 0;
 
-        $result = $this->db->query("SELECT `manufacturer_id` FROM `". DB_PREFIX ."manufacturer` WHERE name = '{$name}'; ");
+        $result = $this->db->query("SELECT `manufacturer_id` FROM `" . DB_PREFIX . "manufacturer` WHERE name = '{$name}'; ");
         $data = $result->row;
 
-        if ( isset($data['manufacturer_id']) ) {
+        if (isset($data['manufacturer_id'])) {
             return $data['manufacturer_id'];
-        }
-        else {
+        } else {
             return $defaultManufacturer;
         }
     }
@@ -956,25 +964,25 @@ class ModelModuleShopmanager extends Model {
      * @param array $products products list
      * @return bool operation success
      */
-    protected function updateProductsInDB($products) {
-		$this->import("START TRANSACTION;\n");
+    protected function updateProductsInDB($products)
+    {
+        $this->import("START TRANSACTION;\n");
 
 
-		// store or update manufacturers
-		if (!$this->updateManufacturersInDB($products)) {
-			$this->db->query('ROLLBACK;');
-			return false;
+        // store or update manufacturers
+        if (!$this->updateManufacturersInDB($products)) {
+            $this->db->query('ROLLBACK;');
+            return false;
         }
 
-		// get weight classes
-		$weightClassIds = $this->getWeightClassIds();
+        // get weight classes
+        $weightClassIds = $this->getWeightClassIds();
 
-		// get length classes
-		$lengthClassIds = $this->getLengthClassIds();
+        // get length classes
+        $lengthClassIds = $this->getLengthClassIds();
 
-		// generate and execute SQL for storing the products
-        foreach ($products as $key => $product)
-        {
+        // generate and execute SQL for storing the products
+        foreach ($products as $key => $product) {
             //get old product data
             $productData = array();
             if (trim($product['product_id']) != '') {
@@ -1035,7 +1043,7 @@ class ModelModuleShopmanager extends Model {
                 $insert .= "weight = '{$product['weight']}',";
             }
             if (isset($product['unit'])) {
-                if ( isset($weightClassIds[$product['weight']])) {
+                if (isset($weightClassIds[$product['weight']])) {
                     $productData['weight'] = $weightClassIds[$product['weight']];
                     $insert .= "weight = '{$product['weight']}',";
                 }
@@ -1088,7 +1096,7 @@ class ModelModuleShopmanager extends Model {
             }
 
             //formed sql query from data
-            $query = "('".implode($productData, "','"). "')";
+            $query = "('" . implode($productData, "','") . "')";
             $query = str_replace("'NULL'", 'NULL', $query);
 
             $insert = rtrim(trim($insert), ',');
@@ -1099,7 +1107,7 @@ class ModelModuleShopmanager extends Model {
             }
 
             $lastId = trim($product['product_id']);
-            if ( $lastId == '') {
+            if ($lastId == '') {
                 $lastId = $this->db->getLastId();
             }
 
@@ -1176,7 +1184,7 @@ class ModelModuleShopmanager extends Model {
             $this->load->model('localisation/language');
             $languageList = $this->model_localisation_language->getLanguages();
 
-            foreach ($languageList as $code =>$language) {
+            foreach ($languageList as $code => $language) {
                 $sql = "SELECT * FROM `" . DB_PREFIX . "product_description` WHERE product_id = '{$lastId}' AND language_id = '{$language['language_id']}' ;";
                 $result = $this->db->query($sql);
 
@@ -1187,19 +1195,19 @@ class ModelModuleShopmanager extends Model {
                 $productDescription['product_id'] = $lastId;
                 $productDescription['language_id'] = $language['language_id'];
 
-                if ( isset($product['name']) && isset($product['name'][$language['language_id']]) ) {
+                if (isset($product['name']) && isset($product['name'][$language['language_id']])) {
                     $productDescription['name'] = $product['name'][$language['language_id']];
                     $flag = true;
                 }
-                if ( isset($product['description']) && isset($product['description'][$language['language_id']]) ) {
+                if (isset($product['description']) && isset($product['description'][$language['language_id']])) {
                     $productDescription['description'] = $product['description'][$language['language_id']];
                     $flag = true;
                 }
-                if ( isset($product['meta_description']) && isset($product['meta_description'][$language['language_id']]) ) {
+                if (isset($product['meta_description']) && isset($product['meta_description'][$language['language_id']])) {
                     $productDescription['meta_description'] = $product['meta_description'][$language['language_id']];
                     $flag = true;
                 }
-                if ( isset($product['meta_keyword']) && isset($product['meta_keyword'][$language['language_id']]) ) {
+                if (isset($product['meta_keyword']) && isset($product['meta_keyword'][$language['language_id']])) {
                     $productDescription['meta_keyword'] = $product['meta_keyword'][$language['language_id']];
                     $flag = true;
                 }
@@ -1209,10 +1217,10 @@ class ModelModuleShopmanager extends Model {
                     $this->db->query($sql);
 
                     foreach ($productDescription as $fieldName => $productData) {
-                        $productDescription[$fieldName] = str_replace('\'','&#39;', $productData);
+                        $productDescription[$fieldName] = str_replace('\'', '&#39;', $productData);
                     }
 
-                    $query = "('".implode($productDescription, "','"). "')";
+                    $query = "('" . implode($productDescription, "','") . "')";
                     $query = str_replace("'NULL'", 'NULL', $query);
 
                     $sql = "INSERT INTO `" . DB_PREFIX . "product_description` VALUES {$query} ;";
@@ -1220,20 +1228,21 @@ class ModelModuleShopmanager extends Model {
                 }
             }
         }
-		// final commit
-		$this->db->query("COMMIT;");
-		return true;
-	}
+        // final commit
+        $this->db->query("COMMIT;");
+        return true;
+    }
 
-	/**
-	 * Detecting message ebncoding
-	 *
-	 * @param string $str
-	 * @return string
-	 */
-	protected function detect_encoding($str) {
-		return mb_detect_encoding($str, 'UTF-8,ISO-8859-15,ISO-8859-1,cp1251,KOI8-R');
-	}
+    /**
+     * Detecting message ebncoding
+     *
+     * @param string $str
+     * @return string
+     */
+    protected function detect_encoding($str)
+    {
+        return mb_detect_encoding($str, 'UTF-8,ISO-8859-15,ISO-8859-1,cp1251,KOI8-R');
+    }
 
     /**
      * read XlS file, processed data and transfer to DB insert
@@ -1241,7 +1250,8 @@ class ModelModuleShopmanager extends Model {
      * @param Spreadsheet_Excel_Reader $reader
      * @return bool success
      */
-    function uploadProducts(&$reader) {
+    function uploadProducts(&$reader)
+    {
 
         //read first Sheet
         $data = $reader->getSheet(0);
@@ -1258,63 +1268,62 @@ class ModelModuleShopmanager extends Model {
         $this->columns = $this->relation;
 
         //get default units
-		$defaultWeightUnit = $this->getDefaultWeightUnit();
-		$defaultMeasurementUnit = $this->getDefaultMeasurementUnit();
-		$defaultStockStatusId = $this->config->get('config_stock_status_id');
+        $defaultWeightUnit = $this->getDefaultWeightUnit();
+        $defaultMeasurementUnit = $this->getDefaultMeasurementUnit();
+        $defaultStockStatusId = $this->config->get('config_stock_status_id');
 
         //get range of Excel product list
-		$products = array();
-		$isFirstRow = true;
-		$i = 0;
-		$j = 1;
-		$k = $data->getHighestRow();
+        $products = array();
+        $isFirstRow = true;
+        $i = 0;
+        $j = 1;
+        $k = $data->getHighestRow();
 
 
         //reading data, form data array
-		for ($i = 2; $i < $k; $i+=1) {
-			$product = array();
-			$productId = trim($this->getCell($data, $i, $j++));
+        for ($i = 2; $i < $k; $i += 1) {
+            $product = array();
+            $productId = trim($this->getCell($data, $i, $j++));
 
             foreach ($this->relation as $relKey => $relation) {
-                if ( isset($relation['position']) ) {
-                    $tmp = trim($this->getCell($data, $i,$relation['position']));
+                if (isset($relation['position'])) {
+                    $tmp = trim($this->getCell($data, $i, $relation['position']));
                     $product[$relKey] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
-                }
-                else {
+                } else {
                     foreach ($relation as $langCode => $sublanguage) {
-                        $tmp = trim($this->getCell($data, $i,$relation[$langCode]['position']));
+                        $tmp = trim($this->getCell($data, $i, $relation[$langCode]['position']));
                         $product[$relKey][$langCode] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
                     }
                 }
             }
 
-			$products[] = $product;
-			$j = 1;
+            $products[] = $product;
+            $j = 1;
         }
 
         // transfer to database insert
-		return $this->updateProductsInDB($products);
-	}
+        return $this->updateProductsInDB($products);
+    }
 
-	/**
-	 * update categories in database
-	 *
-	 * @param array $categories categories list
-	 * @return bool operation success
-	 */
-	protected function updateCategoriesInDB(&$categories)
+    /**
+     * update categories in database
+     *
+     * @param array $categories categories list
+     * @return bool operation success
+     */
+    protected function updateCategoriesInDB(&$categories)
     {
-		$this->import("START TRANSACTION;");
-		// generate and execute SQL for inserting the categories
+        $this->import("START TRANSACTION;");
+        // generate and execute SQL for inserting the categories
 
-		foreach ($categories as $category) {
+        foreach ($categories as $category) {
             $simpleCategory = $this->tableSimple['category'];
 
             //insert category data
             $insert = '';
             $isNew = true;
-            if (isset($category['category_id']) && trim($category['category_id']) != '' ) {
-                $sql = "SELECT * FROM ". DB_PREFIX ."category WHERE category_id = {$category['category_id']}";
+            if (isset($category['category_id']) && trim($category['category_id']) != '') {
+                $sql = "SELECT * FROM " . DB_PREFIX . "category WHERE category_id = {$category['category_id']}";
                 $result = $this->db->query($sql);
                 $simpleCategory = array_merge($simpleCategory, $result->row);
 
@@ -1359,7 +1368,7 @@ class ModelModuleShopmanager extends Model {
             $sql = str_replace("'NULL'", "NULL", $sql);
             $insert = rtrim(trim($insert), ',');
 
-            $query = "INSERT INTO `". DB_PREFIX ."category` VALUES {$sql} ON DUPLICATE KEY UPDATE {$insert} ";
+            $query = "INSERT INTO `" . DB_PREFIX . "category` VALUES {$sql} ON DUPLICATE KEY UPDATE {$insert} ";
             $this->db->query($query);
 
             $lastId = $this->db->getLastId();
@@ -1375,7 +1384,7 @@ class ModelModuleShopmanager extends Model {
             foreach ($languageList as $code => $language) {
                 $catDescSimple = $this->tableSimple['category_description'];
 
-                $sql = "SELECT * FROM `". DB_PREFIX ."category_description` WHERE category_id = {$lastId} and language_id = {$language['language_id']} LIMIT 1; ";
+                $sql = "SELECT * FROM `" . DB_PREFIX . "category_description` WHERE category_id = {$lastId} and language_id = {$language['language_id']} LIMIT 1; ";
                 $result = $this->db->query($sql);
                 $catDescSimple = array_merge($catDescSimple, $result->row);
                 $catDescSimple['category_id'] = $lastId;
@@ -1400,15 +1409,15 @@ class ModelModuleShopmanager extends Model {
                 $sql = "( '" . implode($catDescSimple, "','") . "' )";
                 $sql = str_replace("'NULL'", "NULL", $sql);
 
-                $query = "DELETE FROM `". DB_PREFIX ."category_description` WHERE category_id = '{$catDescSimple['category_id']}' AND language_id = '{$catDescSimple['language_id']}';";
+                $query = "DELETE FROM `" . DB_PREFIX . "category_description` WHERE category_id = '{$catDescSimple['category_id']}' AND language_id = '{$catDescSimple['language_id']}';";
                 $this->db->query($query);
 
-                $query = "INSERT INTO `". DB_PREFIX ."category_description` VALUES {$sql} ";
+                $query = "INSERT INTO `" . DB_PREFIX . "category_description` VALUES {$sql} ";
                 $this->db->query($query);
             }
 
             //adding keywords to  url_alias;
-            if ( isset($category['keyword']) && trim($category['keyword']) != '' ) {
+            if (isset($category['keyword']) && trim($category['keyword']) != '') {
                 $sql = "DELETE FROM " . DB_PREFIX . "url_alias  WHERE query = 'category_id={$lastId}'";
                 $this->db->query($sql);
 
@@ -1416,11 +1425,11 @@ class ModelModuleShopmanager extends Model {
                 $sql .= "VALUES ('category_id={$lastId}','{$category['keyword']}') ";
                 $this->db->query($sql);
             }
-		}
-		// final commit
-		$this->db->query("COMMIT;");
-		return true;
-	}
+        }
+        // final commit
+        $this->db->query("COMMIT;");
+        return true;
+    }
 
     /**
      * create link between category settings array and columns in XLS file
@@ -1437,20 +1446,19 @@ class ModelModuleShopmanager extends Model {
         $this->relation = array();
         $data = $reader->getSheet(0);
         $relation = array();
-        switch($type) {
+        switch ($type) {
             case 'category':
                 $config = $this->getCateforyFildsList();
                 $colCount = PHPExcel_Cell::columnIndexFromString($data->getHighestColumn());
 
-                for ($i = 1; $i < $colCount+1; $i++ ) {
+                for ($i = 1; $i < $colCount + 1; $i++) {
                     $fieldName = $this->getCell($data, 0, $i);
                     foreach ($config as $key => $configField) {
                         if ($fieldName == $key) {
                             $this->relation[$fieldName] = $config[$fieldName];
                             $this->relation[$fieldName]['position'] = $i;
                             break;
-                        }
-                        else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
+                        } else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
                             $langArray = preg_split("/^{$key}[_]{1}/", $fieldName);
                             $languageCode = $languageList[$langArray[1]]['language_id'];
                             $this->relation[$key][$languageCode] = $config[$key];
@@ -1459,20 +1467,19 @@ class ModelModuleShopmanager extends Model {
                         }
                     }
                 }
-            break;
+                break;
             case 'product':
                 $config = $this->getProductFildsList();
                 $colCount = PHPExcel_Cell::columnIndexFromString($data->getHighestColumn());
 
-                for ($i = 1; $i < $colCount+1; $i++ ) {
+                for ($i = 1; $i < $colCount + 1; $i++) {
                     $fieldName = $this->getCell($data, 0, $i);
                     foreach ($config as $key => $configField) {
                         if ($fieldName == $key) {
                             $this->relation[$fieldName] = $config[$fieldName];
                             $this->relation[$fieldName]['position'] = $i;
                             break;
-                        }
-                        else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
+                        } else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
                             $langArray = preg_split("/^{$key}[_]{1}/", $fieldName);
                             $languageCode = $languageList[$langArray[1]]['language_id'];
                             $this->relation[$key][$languageCode] = $config[$key];
@@ -1481,10 +1488,10 @@ class ModelModuleShopmanager extends Model {
                         }
                     }
                 }
-            break;
+                break;
             default:
                 return false;
-            break;
+                break;
         }
     }
 
@@ -1494,7 +1501,8 @@ class ModelModuleShopmanager extends Model {
      * @param Spreadsheet_Excel_reader $reader
      * @return bool operation success
      */
-    protected function uploadCategories(&$reader) {
+    protected function uploadCategories(&$reader)
+    {
         $data = $reader->getSheet(0);
 
         if ($data->getTitle() != 'Category') {
@@ -1505,31 +1513,30 @@ class ModelModuleShopmanager extends Model {
         $this->columns = $this->getCateforyFildsList();
         $this->buildFieldRelations($reader, 'category');
 
-		$categories = array();
-		$isFirstRow = true;
-		$i = 0;
-		$j = 1;
-		$k = $data->getHighestRow();
+        $categories = array();
+        $isFirstRow = true;
+        $i = 0;
+        $j = 1;
+        $k = $data->getHighestRow();
 
-		for ($i = 1; $i < $k; $i+=1) {
-			if ($isFirstRow) {
-				$isFirstRow = false;
-				continue;
-			}
-			$category = array();
+        for ($i = 1; $i < $k; $i += 1) {
+            if ($isFirstRow) {
+                $isFirstRow = false;
+                continue;
+            }
+            $category = array();
             if (!isset($this->relation['category_id'])) {
                 return;
             }
 
             foreach ($this->relation as $relKey => $relation) {
-                if ( isset($relation['position']) ) {
-                    $tmp = trim($this->getCell($data, $i,$relation['position']));
+                if (isset($relation['position'])) {
+                    $tmp = trim($this->getCell($data, $i, $relation['position']));
                     //$category[$relKey] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
                     $category[$relKey] = $tmp;
-                }
-                else {
+                } else {
                     foreach ($relation as $langCode => $sublanguage) {
-                        $tmp = trim($this->getCell($data, $i,$relation[$langCode]['position']));
+                        $tmp = trim($this->getCell($data, $i, $relation[$langCode]['position']));
                         $category[$relKey][$langCode] = htmlentities($tmp, ENT_QUOTES, $this->detect_encoding($tmp));
                         $category[$relKey][$langCode] = $tmp;
                     }
@@ -1537,87 +1544,91 @@ class ModelModuleShopmanager extends Model {
             }
 
             $categories[] = $category;
-			$j = 1;
-		}
+            $j = 1;
+        }
 
-		return $this->updateCategoriesInDB($categories);
-	}
+        return $this->updateCategoriesInDB($categories);
+    }
 
-	function storeAdditionalImagesIntoDatabase(&$reader) {
+    function storeAdditionalImagesIntoDatabase(&$reader)
+    {
 // start transaction
-		$sql = "START TRANSACTION;\n";
+        $sql = "START TRANSACTION;\n";
 
 // delete old additional product images from database
-		$sql = "DELETE FROM `" . DB_PREFIX . "product_image`";
-		$this->db->query($sql);
+        $sql = "DELETE FROM `" . DB_PREFIX . "product_image`";
+        $this->db->query($sql);
 
 // insert new additional product images into database
-		$data = & $reader->getSheet(1); // Products worksheet
-		$maxImageId = 0;
+        $data = & $reader->getSheet(1); // Products worksheet
+        $maxImageId = 0;
 
-		$k = $data->getHighestRow();
-		for ($i = 1; $i < $k; $i+=1) {
-			$productId = trim($this->getCell($data, $i, 1));
-			if ($productId == "") {
-				continue;
-			}
-			$imageNames = trim($this->getCell($data, $i, 29));
-			$imageNames = trim($this->clean($imageNames, true));
-			$imageNames = ($imageNames == "") ? array() : explode(",", $imageNames);
-			foreach ($imageNames as $imageName) {
-				$imageName = mysql_real_escape_string($imageName);
-				$maxImageId += 1;
-				$sql = "INSERT INTO `" . DB_PREFIX . "product_image` (`product_image_id`, product_id, `image`) VALUES ";
-				$sql .= "($maxImageId,$productId,'$imageName');";
-				$this->db->query($sql);
-			}
-		}
+        $k = $data->getHighestRow();
+        for ($i = 1; $i < $k; $i += 1) {
+            $productId = trim($this->getCell($data, $i, 1));
+            if ($productId == "") {
+                continue;
+            }
+            $imageNames = trim($this->getCell($data, $i, 29));
+            $imageNames = trim($this->clean($imageNames, true));
+            $imageNames = ($imageNames == "") ? array() : explode(",", $imageNames);
+            foreach ($imageNames as $imageName) {
+                $imageName = mysql_real_escape_string($imageName);
+                $maxImageId += 1;
+                $sql = "INSERT INTO `" . DB_PREFIX . "product_image` (`product_image_id`, product_id, `image`) VALUES ";
+                $sql .= "($maxImageId,$productId,'$imageName');";
+                $this->db->query($sql);
+            }
+        }
 
-		$this->db->query("COMMIT;");
-		return true;
-	}
+        $this->db->query("COMMIT;");
+        return true;
+    }
 
-	function uploadImages(&$reader) {
-		$ok = $this->storeAdditionalImagesIntoDatabase($reader);
-		return $ok;
-	}
+    function uploadImages(&$reader)
+    {
+        $ok = $this->storeAdditionalImagesIntoDatabase($reader);
+        return $ok;
+    }
 
-	/**
-	 * Get table cell data from reader
-	 *
-	 * @param Spreadsheet_excel_reader_sheet $worksheet
-	 * @param int $row
-	 * @param int $col
-	 * @param string $default_val
-	 * @return string Cell data
-	 */
-	protected function getCell(&$worksheet, $row, $col, $default_val='') {
-		$col -= 1; // we use 1-based, PHPExcel uses 0-based column index
-		$row += 1; // we use 0-based, PHPExcel used 1-based row index
-		return ($worksheet->cellExistsByColumnAndRow($col, $row)) ? $worksheet->getCellByColumnAndRow($col, $row)->getValue() : $default_val;
-	}
+    /**
+     * Get table cell data from reader
+     *
+     * @param Spreadsheet_excel_reader_sheet $worksheet
+     * @param int $row
+     * @param int $col
+     * @param string $default_val
+     * @return string Cell data
+     */
+    protected function getCell(&$worksheet, $row, $col, $default_val = '')
+    {
+        $col -= 1; // we use 1-based, PHPExcel uses 0-based column index
+        $row += 1; // we use 0-based, PHPExcel used 1-based row index
+        return ($worksheet->cellExistsByColumnAndRow($col, $row)) ? $worksheet->getCellByColumnAndRow($col, $row)->getValue() : $default_val;
+    }
 
     /**
      * Get all stores linked with categories
      *
      * @return array category store IDs
      */
-    protected function getStoreIdsForCategories() {
-		$sql = "SELECT category_id, store_id FROM `" . DB_PREFIX . "category_to_store` cs;";
-		$storeIds = array();
-		$result = $this->db->query($sql);
-		foreach ($result->rows as $row) {
-			$categoryId = $row['category_id'];
-			$storeId = $row['store_id'];
-			if (!isset($storeIds[$categoryId])) {
-				$storeIds[$categoryId] = array();
-			}
-			if (!in_array($storeId, $storeIds[$categoryId])) {
-				$storeIds[$categoryId][] = $storeId;
-			}
-		}
-		return $storeIds;
-	}
+    protected function getStoreIdsForCategories()
+    {
+        $sql = "SELECT category_id, store_id FROM `" . DB_PREFIX . "category_to_store` cs;";
+        $storeIds = array();
+        $result = $this->db->query($sql);
+        foreach ($result->rows as $row) {
+            $categoryId = $row['category_id'];
+            $storeId = $row['store_id'];
+            if (!isset($storeIds[$categoryId])) {
+                $storeIds[$categoryId] = array();
+            }
+            if (!in_array($storeId, $storeIds[$categoryId])) {
+                $storeIds[$categoryId][] = $storeId;
+            }
+        }
+        return $storeIds;
+    }
 
     /**
      * read category data from database and push to XLS
@@ -1627,15 +1638,15 @@ class ModelModuleShopmanager extends Model {
      */
     function populateCategoriesWorksheet(&$worksheet)
     {
-		// Set the column widths
-		$j = 0;
-		$i = 0;
+        // Set the column widths
+        $j = 0;
+        $i = 0;
 
         $config = $this->getConfig();
         $categoryFields = isset($config['category']) ? $config['category'] : array();
 
         //switch off unselected categories
-        foreach($this->columns as $key => $column) {
+        foreach ($this->columns as $key => $column) {
             if (!isset($categoryFields[$key])) {
                 $this->columns[$key]['enabled'] = false;
             }
@@ -1645,7 +1656,7 @@ class ModelModuleShopmanager extends Model {
         $languageList = $this->model_localisation_language->getLanguages();
 
         //formed SQL query
-		$query = "SELECT DISTINCT c.* , ua.keyword";
+        $query = "SELECT DISTINCT c.* , ua.keyword";
         foreach ($languageList as $code => $language) {
             $query .= ", description_{$language['code']}.name AS name_{$language['code']}";
             $query .= ", description_{$language['code']}.description AS description_{$language['code']}";
@@ -1655,13 +1666,13 @@ class ModelModuleShopmanager extends Model {
         $query .= "FROM `" . DB_PREFIX . "category` AS c ";
 
         foreach ($languageList as $code => $language) {
-		    $query .= "INNER JOIN `" . DB_PREFIX . "category_description` AS description_{$language['code']} ON description_{$language['code']}.category_id = c.category_id  AND description_{$language['code']}.language_id='{$language['language_id']}' ";
+            $query .= "INNER JOIN `" . DB_PREFIX . "category_description` AS description_{$language['code']} ON description_{$language['code']}.category_id = c.category_id  AND description_{$language['code']}.language_id='{$language['language_id']}' ";
         }
 
-		$query .= "LEFT JOIN `" . DB_PREFIX . "url_alias` ua ON ua.query=CONCAT('category_id=',c.category_id) ";
-		$query .= "ORDER BY c.`parent_id`, `sort_order`, c.`category_id`;";
+        $query .= "LEFT JOIN `" . DB_PREFIX . "url_alias` ua ON ua.query=CONCAT('category_id=',c.category_id) ";
+        $query .= "ORDER BY c.`parent_id`, `sort_order`, c.`category_id`;";
 
-		$result = $this->db->query($query);
+        $result = $this->db->query($query);
 
         if (sizeof($result->row) == 0) {
             return false;
@@ -1670,18 +1681,17 @@ class ModelModuleShopmanager extends Model {
         //create data array with enclosure for multilanguage columns
         $writeColumns = array();
         foreach ($result->row as $key => $row) {
-            foreach($this->columns as $cname => $column ) {
-                if (preg_match("/^{$cname}[_a-z0-9]{0,3}$/",$key) && $column['enabled']) {
-                    if ( isset($column['multirow']) && $column['multirow'] ) {
+            foreach ($this->columns as $cname => $column) {
+                if (preg_match("/^{$cname}[_a-z0-9]{0,3}$/", $key) && $column['enabled']) {
+                    if (isset($column['multirow']) && $column['multirow']) {
                         foreach ($languageList as $code => $language) {
-                            $writeColumns[$cname."_{$language['code']}"] = array(
+                            $writeColumns[$cname . "_{$language['code']}"] = array(
                                 'name' => "{$column['name']}({$language['code']})",
                                 'length' => $column['length'],
                                 'format' => $column['format'],
                             );
                         }
-                    }
-                    else {
+                    } else {
                         $writeColumns[$cname] = array(
                             'name' => $column['name'],
                             'length' => $column['length'],
@@ -1698,12 +1708,13 @@ class ModelModuleShopmanager extends Model {
             $writeColumns[$colId]['position'] = $j - 1;
             $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
             $worksheet->writeString($i, $j - 1, $colId, $this->boxFormat);
-            $worksheet->writeString($i+1, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
+            $worksheet->writeString($i + 1, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
         }
         $i++;
         $worksheet->setRow(0, 1, $this->boxFormat); // set first row height 1 px (ID fields)
         $worksheet->setRow($i, 30, $this->boxFormat);
-        $i++; $j = 0;
+        $i++;
+        $j = 0;
         $storeIds = $this->getStoreIdsForCategories();
 
         // write data
@@ -1713,7 +1724,7 @@ class ModelModuleShopmanager extends Model {
             }
             $i++;
         }
-	}
+    }
 
     /**
      * get linked store data for products
@@ -1722,21 +1733,21 @@ class ModelModuleShopmanager extends Model {
      */
     function getStoreIdsForProducts()
     {
-		$sql = "SELECT product_id, store_id FROM `" . DB_PREFIX . "product_to_store` ps;";
-		$storeIds = array();
-		$result = $this->db->query($sql);
-		foreach ($result->rows as $row) {
-			$productId = $row['product_id'];
-			$storeId = $row['store_id'];
-			if (!isset($storeIds[$productId])) {
-				$storeIds[$productId] = array();
-			}
-			if (!in_array($storeId, $storeIds[$productId])) {
-				$storeIds[$productId][] = $storeId;
-			}
-		}
-		return $storeIds;
-	}
+        $sql = "SELECT product_id, store_id FROM `" . DB_PREFIX . "product_to_store` ps;";
+        $storeIds = array();
+        $result = $this->db->query($sql);
+        foreach ($result->rows as $row) {
+            $productId = $row['product_id'];
+            $storeId = $row['store_id'];
+            if (!isset($storeIds[$productId])) {
+                $storeIds[$productId] = array();
+            }
+            if (!in_array($storeId, $storeIds[$productId])) {
+                $storeIds[$productId][] = $storeId;
+            }
+        }
+        return $storeIds;
+    }
 
 
     /**
@@ -1745,46 +1756,44 @@ class ModelModuleShopmanager extends Model {
      * @param Spreadsheet_excel_writer $worksheet
      * @return bool sucess
      */
-	function populateProductsWorksheet(&$worksheet)
+    function populateProductsWorksheet(&$worksheet)
     {
         $this->load->model('localisation/language');
         $languageList = $this->model_localisation_language->getLanguages();
 
-		// Set the column widths
+        // Set the column widths
         $config = $this->getConfig();
         $productFields = $config['product'];
 
         $i = 1;
-        foreach ($this->columns as $key => $column ) {
-            if ( !isset($productFields[$key]) ) {
+        foreach ($this->columns as $key => $column) {
+            if (!isset($productFields[$key])) {
                 $this->columns[$key]['enabled'] = false;
-            }
-            else {
+            } else {
                 $this->columns[$key]['enabled'] = true;
                 $i++;
             }
         }
 
-		$j = 1;
-		$i = 0;
+        $j = 1;
+        $i = 0;
         $colCount = 0;
         $writeColumns = array();
-		foreach ($this->columns as $colId => $colData) {
-			if ($colData['enabled'] ) {
+        foreach ($this->columns as $colId => $colData) {
+            if ($colData['enabled']) {
                 if (!$colData['multirow']) {
-			        $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
+                    $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
                     $worksheet->writeString($i, $j - 1, $colId, $this->boxFormat);
-			        $worksheet->writeString($i+1, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
+                    $worksheet->writeString($i + 1, $j - 1, ($colData['name'] ? $colData['name'] : $colId), $this->boxFormat);
                     $writeColumns[$colId] = $colData;
                     $writeColumns[$colId]['position'] = $j - 1;
                     $colCount++;
                     $j++;
-                }
-                else {
-                    foreach ($languageList as $code => $language ) {
+                } else {
+                    foreach ($languageList as $code => $language) {
                         $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
                         $worksheet->writeString($i, $j - 1, "{$colId}_{$language['code']}", $this->boxFormat);
-                        $worksheet->writeString($i+1, $j - 1, "{$colData['name']}({$language['code']})", $this->boxFormat);
+                        $worksheet->writeString($i + 1, $j - 1, "{$colData['name']}({$language['code']})", $this->boxFormat);
                         $writeColumns["{$colId}_{$code}"] = $colData;
                         $writeColumns["{$colId}_{$code}"]['position'] = $j - 1;
                         $colCount++;
@@ -1792,10 +1801,10 @@ class ModelModuleShopmanager extends Model {
                     }
                 }
             }
-		}
+        }
 
-		$worksheet->setRow($i, 1, $this->boxFormat);
-        $worksheet->setRow($i+1, 30, $this->boxFormat);
+        $worksheet->setRow($i, 1, $this->boxFormat);
+        $worksheet->setRow($i + 1, 30, $this->boxFormat);
 
         $query = "SELECT _p.product_id AS product_id,";
         $query .= "GROUP_CONCAT( _ptc.category_id ) AS categories, ";
@@ -1846,7 +1855,8 @@ class ModelModuleShopmanager extends Model {
         $query .= "LEFT JOIN `" . DB_PREFIX . "product_related` _pr ON _pr.product_id=_p.product_id ";
         foreach ($languageList as $code => $language) {
             $query .= "LEFT JOIN `" . DB_PREFIX . "product_description` _pd_{$language['code']} ON _pd_{$language['code']}.product_id=_p.product_id AND _pd_{$language['code']}.language_id = '{$language['language_id']}' ";
-        };
+        }
+        ;
         $query .= "GROUP BY _p.product_id";
 
         $result = $this->db->query($query);
@@ -1865,32 +1875,34 @@ class ModelModuleShopmanager extends Model {
                 $row['related'] = implode(array_flip(array_flip(explode(',', $row['related']))), ',');
 
             foreach ($row as $cellName => $cell) {
-                if (isset($writeColumns[$cellName]) ) {
+                if (isset($writeColumns[$cellName])) {
                     $worksheet->write($i, $writeColumns[$cellName]['position'], $cell, $this->textFormat);
                 }
             }
         }
-	}
+    }
 
-	/**
-	 * Load default language
-	 *
-	 * @return type
-	 */
-	protected function loadDefaultLanguage() {
-		$code = $this->config->get('config_language');
-		$sql = "SELECT language_id FROM `" . DB_PREFIX . "language` WHERE code = '$code'";
-		$result = $this->db->query($sql);
-		$this->languageId = ($result->row && $result->row['language_id']) ? $result->row['language_id'] : 1;
-	}
+    /**
+     * Load default language
+     *
+     * @return type
+     */
+    protected function loadDefaultLanguage()
+    {
+        $code = $this->config->get('config_language');
+        $sql = "SELECT language_id FROM `" . DB_PREFIX . "language` WHERE code = '$code'";
+        $result = $this->db->query($sql);
+        $this->languageId = ($result->row && $result->row['language_id']) ? $result->row['language_id'] : 1;
+    }
 
-	/**
-	 * Log writer
-	 * @param type $text
-	 */
-	protected function log($text) {
-		if ($text = trim($text)) {
-			error_log(date('Y-m-d H:i:s - ', time()) . "Export/Import: {$text}\n", 3, DIR_LOGS . "error.txt");
-		}
-	}
+    /**
+     * Log writer
+     * @param type $text
+     */
+    protected function log($text)
+    {
+        if ($text = trim($text)) {
+            error_log(date('Y-m-d H:i:s - ', time()) . "Export/Import: {$text}\n", 3, DIR_LOGS . "error.txt");
+        }
+    }
 }

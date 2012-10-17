@@ -5,7 +5,8 @@
  *
  * @copyright  2012 Stfalcon (http://stfalcon.com/)
  */
-class ControllerModuleShopmanager extends Controller {
+class ControllerModuleShopmanager extends Controller
+{
 
     /**
      * Error messages
@@ -30,7 +31,7 @@ class ControllerModuleShopmanager extends Controller {
 
             if ($this->model_module_shopmanager->upload($file, $group)) {
                 $this->session->data['success'] = $this->language->get('text_success_' . $group);
-                $this->redirect(HTTPS_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token']);
+                $this->redirect(HTTP_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token']);
             } else {
                 $this->error['warning'] = $this->language->get('error_upload_' . $group);
             }
@@ -73,20 +74,20 @@ class ControllerModuleShopmanager extends Controller {
         $this->document->breadcrumbs = array();
 
         $this->document->breadcrumbs[] = array(
-            'href' => HTTPS_SERVER . 'index.php?route=common/home&token=' . $this->session->data['token'],
+            'href' => HTTP_SERVER . 'index.php?route=common/home&token=' . $this->session->data['token'],
             'text' => $this->language->get('text_home'),
             'separator' => FALSE
         );
 
         $this->document->breadcrumbs[] = array(
-            'href' => HTTPS_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token'],
+            'href' => HTTP_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token'],
             'text' => $this->language->get('heading_title'),
             'separator' => ' :: '
         );
 
-        $this->data['action'] = HTTPS_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token'];
+        $this->data['action'] = HTTP_SERVER . 'index.php?route=module/shopmanager&token=' . $this->session->data['token'];
 
-        $this->data['export'] = HTTPS_SERVER . 'index.php?route=module/shopmanager/export&token=' . $this->session->data['token'];
+        $this->data['export'] = HTTP_SERVER . 'index.php?route=module/shopmanager/export&token=' . $this->session->data['token'];
 
         $this->template = 'module/shopmanager.tpl';
         $this->children = array(
@@ -101,7 +102,8 @@ class ControllerModuleShopmanager extends Controller {
      *
      * @return message if error
      */
-    public function export() {
+    public function export()
+    {
         if ($this->validateExport()) {
             // set appropriate memory and timeout limits
             ini_set("memory_limit", "128M");
@@ -111,17 +113,17 @@ class ControllerModuleShopmanager extends Controller {
             $this->load->model('module/shopmanager');
 
             $data = array();
-            switch($group) {
+            switch ($group) {
                 case 'category':
                     if (isset($this->request->post['category'])) {
                         $data = $this->request->post['category'];
-                        $data = array_merge( array('category_id'), $data);
+                        $data = array_merge(array('category_id'), $data);
                     }
                     break;
                 case 'product':
                     if (isset($this->request->post['product'])) {
                         $data = $this->request->post['product'];
-                        $data = array_merge( array('product_id'), $data);
+                        $data = array_merge(array('product_id'), $data);
                     }
                     break;
             }
@@ -142,7 +144,8 @@ class ControllerModuleShopmanager extends Controller {
      *
      * @return boolean Error
      */
-    private function validateImport() {
+    private function validateImport()
+    {
 
         if (!$this->user->hasPermission('modify', 'module/shopmanager')) {
             $this->error['warning'] = $this->language->get('error_permission');
@@ -155,8 +158,8 @@ class ControllerModuleShopmanager extends Controller {
      *
      * @return boolean error
      */
-    private function validateExport() {
-
+    private function validateExport()
+    {
         if (!$this->user->hasPermission('modify', 'module/shopmanager')) {
             $this->error['warning'] = $this->language->get('error_permission');
         }
@@ -172,7 +175,8 @@ class ControllerModuleShopmanager extends Controller {
      *
      * @return type
      */
-    private function validateUpload() {
+    private function validateUpload()
+    {
 
         if (!isset($this->request->files['upload']) || !is_uploaded_file($this->request->files['upload']['tmp_name'])) {
             $this->error['warning'] = $this->language->get('error_import');
@@ -187,7 +191,8 @@ class ControllerModuleShopmanager extends Controller {
      * @param string $request ("category" or "product") groups for import
      * @return boolean validated
      */
-    private function validateImportGroup($request) {
+    private function validateImportGroup($request)
+    {
         //settings array - possible groups
         $import_groups = array('category', 'product');
 
@@ -205,14 +210,8 @@ class ControllerModuleShopmanager extends Controller {
      */
     public function install()
     {
-        $sql = "CREATE TABLE `". DB_PREFIX ."shopmanager_config` (
-                `config_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                `group` varchar(60) NOT NULL,
-                `field` varchar(255) NOT NULL,
-                PRIMARY KEY (`config_id`),
-                KEY `group` (`group`(10))
-        ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
-        $this->db->query($sql);
+        $this->load->model('module/shopmanager');
+        $this->model_module_shopmanager->install();
     }
 
 }
