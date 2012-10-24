@@ -72,24 +72,6 @@ class ModelModuleShopmanager extends Model
     public $configTable = 'shopmanager_config';
 
     /**
-     * Current language
-     * @var int current language id
-     */
-    protected $languageId = 1;
-
-
-    /**
-     * Cell's format
-     *
-     * @var Spreadsheet_Excel_Writer format
-     */
-    protected $priceFormat, $boxFormat, $weightFormat, $textFormat;
-    /**
-     * @var array | columns which used on import export
-     */
-    protected $columns = array();
-
-    /**
      * @var array | export/import settings
      */
     public $settings = array();
@@ -99,20 +81,23 @@ class ModelModuleShopmanager extends Model
      */
     public $relation = array();
 
+    /**
+     * Current language
+     * @var int current language id
+     */
+    protected $languageId = 1;
 
     /**
-     * Initialisation of module
+     * Cell's format
+     *
+     * @var Spreadsheet_Excel_Writer format
      */
-    protected function init()
-    {
-        global $config;
-        global $log;
-        $config = $this->config;
-        $log = $this->log;
-        set_error_handler('shopmanager_error_handler', E_ALL);
-        register_shutdown_function('shopmanager_error_shutdown_handler');
-        $this->loadDefaultLanguage();
-    }
+    protected $priceFormat, $boxFormat, $weightFormat, $textFormat;
+
+    /**
+     * @var array | columns which used on import export
+     */
+    protected $columns = array();
 
     /**
      * Get config data from base
@@ -137,7 +122,7 @@ class ModelModuleShopmanager extends Model
     }
 
     public function install(){
-         $sql = "CREATE TABLE `". DB_PREFIX ."shopmanager_config` (
+         $sql = "CREATE TABLE  IF NOT EXISTS `". DB_PREFIX ."shopmanager_config` (
             `config_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
             `group` varchar(60) NOT NULL,
             `field` varchar(255) NOT NULL,
@@ -778,6 +763,20 @@ class ModelModuleShopmanager extends Model
         $workbook->close();
 
         exit;
+    }
+
+    /**
+     * Initialisation of module
+     */
+    protected function init()
+    {
+        global $config;
+        global $log;
+        $config = $this->config;
+        $log = $this->log;
+        set_error_handler('shopmanager_error_handler', E_ALL);
+        register_shutdown_function('shopmanager_error_shutdown_handler');
+        $this->loadDefaultLanguage();
     }
 
     /**
@@ -1477,9 +1476,17 @@ class ModelModuleShopmanager extends Model
                             break;
                         } else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
                             $langArray = preg_split("/^{$key}[_]{1}/", $fieldName);
-                            $languageCode = $languageList[$langArray[1]]['language_id'];
+
+                            foreach ($languageList as $language) {
+                                if ($language['code'] == $langArray[1] ){
+                                    $languageCode = $language['language_id'];
+                                    break;
+                                }
+                            }
+
                             $this->relation[$key][$languageCode] = $config[$key];
                             $this->relation[$key][$languageCode]['position'] = $i;
+
                             break;
                         }
                     }
@@ -1498,7 +1505,14 @@ class ModelModuleShopmanager extends Model
                             break;
                         } else if (preg_match("/^{$key}[_a-z0-9]{0,3}$/", $fieldName)) {
                             $langArray = preg_split("/^{$key}[_]{1}/", $fieldName);
-                            $languageCode = $languageList[$langArray[1]]['language_id'];
+
+                            foreach ($languageList as $language) {
+                                if ($language['code'] == $langArray[1] ){
+                                    $languageCode = $language['language_id'];
+                                    break;
+                                }
+                            }
+
                             $this->relation[$key][$languageCode] = $config[$key];
                             $this->relation[$key][$languageCode]['position'] = $i;
                             break;
@@ -1811,8 +1825,8 @@ class ModelModuleShopmanager extends Model
                         $worksheet->setColumn($j, $j + 1, $colData['length'], $colData['format']);
                         $worksheet->writeString($i, $j - 1, "{$colId}_{$language['code']}", $this->boxFormat);
                         $worksheet->writeString($i + 1, $j - 1, "{$colData['name']}({$language['code']})", $this->boxFormat);
-                        $writeColumns["{$colId}_{$code}"] = $colData;
-                        $writeColumns["{$colId}_{$code}"]['position'] = $j - 1;
+                        $writeColumns["{$colId}_{$language['code']}"] = $colData;
+                        $writeColumns["{$colId}_{$language['code']}"]['position'] = $j - 1;
                         $colCount++;
                         $j++;
                     }
